@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div class="col-lg-4 mb-4">
+    <div class="card pharmacy-card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Выберите аптеку</h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <select class="form-select" id="storeSelect">
+                    <option selected disabled>Выберите аптеку из списка</option>
+                    <option value="1">ул. Ленина, 10</option>
+                    <option value="2">пр. Мира, 25</option>
+                    <option value="3">ул. Гагарина, 42</option>
+                </select>
+            </div>
+            <div id="map"></div>
+            <div class="store-info mt-3" id="storeInfo">
+                <h5>Информация об аптеке</h5>
+                <p id="storeAddress"><i class="fas fa-map-marker-alt text-primary me-2"></i>Выберите аптеку</p>
+                <p id="storePhone"><i class="fas fa-phone text-primary me-2"></i>Не указано</p>
+                <p id="storeEmail"><i class="fas fa-envelope text-primary me-2"></i>Не указано</p>
+                <p id="storeUpdate"><i class="fas fa-sync-alt text-primary me-2"></i>Данные не загружены</p>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

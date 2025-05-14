@@ -1,0 +1,563 @@
+{{ define "admin_main" }}
+
+<script> // set active tab link
+    document.getElementById("tab_link_images").classList.add("link-secondary")
+</script>
+
+
+<style>
+    .stats-card {
+        transition: transform 0.2s;
+    }
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .preview-img {
+        max-height: 100px;
+        max-width: 100%;
+        object-fit: contain;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+    }
+    .upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 5px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .upload-area:hover {
+        border-color: #0d6efd;
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+</style>
+
+<!-- Основной контент -->
+<main class="col-md-9 mx-sm-auto col-lg-10 px-md-4 py-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Управление изображениями товаров</h1>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card stats-card text-white bg-primary mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Товаров в наличии</h5>
+                            <h2 class="mb-0" id="totalProducts">0</h2>
+                        </div>
+                        <i class="fas fa-boxes fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stats-card text-white bg-success mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Всего изображений</h5>
+                            <h2 class="mb-0" id="productsWithImages">0</h2>
+                        </div>
+                        <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stats-card text-white bg-warning mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Без изображений</h5>
+                            <h2 class="mb-0" id="productsWithoutImages">0</h2>
+                        </div>
+                        <i class="fas fa-exclamation-circle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Автоматическая загрузка -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Автоматическая загрузка</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Запустите процесс автоматической загрузки изображений для товаров, у которых их нет.</p>
+                    <div class="progress mb-3" style="height: 20px;">
+                        <div id="autoLoadProgress" class="progress-bar progress-bar-striped progress-bar-animated"
+                             role="progressbar" style="width: 0">0%</div>
+                    </div>
+                    <button id="startAutoLoad" class="btn btn-primary">
+                        <i class="fas fa-play me-1"></i>Начать загрузку
+                    </button>
+                    <button id="stopAutoLoad" class="btn btn-outline-danger ms-2" disabled>
+                        <i class="fas fa-stop me-1"></i>Остановить
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ручная загрузка -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Ручная загрузка</h5>
+                </div>
+                <div class="card-body">
+                    <form id="manualUploadForm">
+                        <div class="mb-3">
+                            <label for="productCode" class="form-label">Код товара</label>
+                            <input type="number" class="form-control" id="productCode" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Изображение товара</label>
+                            <div class="upload-area" id="dropArea">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <h5>Перетащите изображение сюда</h5>
+                                <p class="text-muted">или</p>
+                                <button type="button" class="btn btn-outline-success" id="selectFileBtn">Выберите файл</button>
+                                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                            </div>
+                            <div id="fileInfo" class="mt-3 text-center">
+                                <img id="imagePreview" class="preview-img" style="display: none;">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-upload me-1"></i>Загрузить изображение
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Проверка изображения -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="card-title mb-0">Проверка изображения</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="input-group mb-3">
+                        <input type="number" class="form-control" id="checkProductCode" placeholder="Введите код товара">
+                        <button class="btn btn-info" type="button" id="checkImageBtn">
+                            <i class="fas fa-search me-1"></i>Проверить
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div id="checkResult">
+                        <img id="checkedImage" class="preview-img" style="display: none;">
+                        <div id="noImageMessage" class="alert alert-warning mt-3" style="display: none;">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Изображение не найдено
+                        </div>
+                        <button id="deleteImageBtn" class="btn btn-danger mt-2" style="display: none;" data-product-code="0">
+                            <i class="fas fa-trash me-1"></i>Удалить изображение
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+
+<!-- Bootstrap JS Bundle with Popper -->
+<!--  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script> -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Элементы интерфейса
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const selectFileBtn = document.getElementById('selectFileBtn');
+        const fileInfo = document.getElementById('fileInfo');
+        const imagePreview = document.getElementById('imagePreview');
+        const manualUploadForm = document.getElementById('manualUploadForm');
+        const startAutoLoadBtn = document.getElementById('startAutoLoad');
+        const stopAutoLoadBtn = document.getElementById('stopAutoLoad');
+        const autoLoadProgress = document.getElementById('autoLoadProgress');
+        const checkImageBtn = document.getElementById('checkImageBtn');
+        const checkProductCode = document.getElementById('checkProductCode');
+        const checkedImage = document.getElementById('checkedImage');
+        const noImageMessage = document.getElementById('noImageMessage');
+        const deleteImageBtn = document.getElementById('deleteImageBtn');
+
+        // Статистика
+        const totalProductsEl = document.getElementById('totalProducts');
+        const productsWithImagesEl = document.getElementById('productsWithImages');
+        const productsWithoutImagesEl = document.getElementById('productsWithoutImages');
+
+        // Переменные для автоматической загрузки
+        let isAutoLoading = false;
+        let autoLoadInterval;
+        let productsWithoutImages = 0;
+        let loadingWs = false;
+
+        // Загрузка статистики (в реальном приложении будет AJAX запрос)
+        function loadStats() {
+            let xhr = new XMLHttpRequest();
+
+            xhr.responseType = "json"
+            xhr.onload = () => {
+                if (!CheckCode(xhr)) {
+                    return
+                }
+
+                totalProductsEl.textContent = xhr.response.products_all;
+                productsWithImagesEl.textContent = xhr.response.images_all;
+                productsWithoutImagesEl.textContent = xhr.response.without_image;
+
+                productsWithoutImages = xhr.response.without_image;
+            }
+
+            xhr.open("GET", `/api/images/stat`)
+            withAuth(xhr)
+            xhr.send()
+        }
+
+        // Обработчики для drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropArea.classList.add('border-primary');
+        }
+
+        function unhighlight() {
+            dropArea.classList.remove('border-primary');
+        }
+
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length) {
+                handleFiles(files);
+            }
+        }
+
+        selectFileBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', function() {
+            if (this.files.length) {
+                handleFiles(this.files);
+            }
+        });
+
+        function handleFiles(files) {
+            const file = files[0];
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('Пожалуйста, выберите файл изображения');
+            }
+        }
+
+        // Ручная загрузка изображения
+        manualUploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const productCode = document.getElementById('productCode').value;
+            const file = fileInput.files[0];
+
+            if (!productCode || !file) {
+                alert('Пожалуйста, заполните код товара и выберите изображение');
+                return;
+            }
+
+            // Здесь должен быть AJAX запрос для загрузки изображения
+            const formData = new FormData();
+            formData.append('productCode', productCode);
+            formData.append('image', file);
+
+            // Показываем индикатор загрузки
+            showLoadingIndicator(true, 'Загрузка изображения...');
+
+
+            let xhr = new XMLHttpRequest();
+
+            xhr.responseType = "json"
+            xhr.onload = () => {
+                showLoadingIndicator(false);
+                if (!CheckCode(xhr)) {
+                    return
+                }
+
+                manualUploadForm.reset();
+                imagePreview.style.display = 'none';
+                loadStats(); // Обновляем статистику
+            }
+
+            xhr.open("POST", `/api/images/save?product_code=${productCode}`)
+            withAuth(xhr)
+            xhr.send(file)
+
+        });
+
+        // Автоматическая загрузка изображений
+        startAutoLoadBtn.addEventListener('click', function() {
+            if (isAutoLoading) return;
+
+
+            let xhr = new XMLHttpRequest();
+
+            xhr.responseType = "json"
+            xhr.onload = () => {
+                showLoadingIndicator(false);
+                if (!CheckCode(xhr)) {
+                    return
+                }
+
+                isAutoLoading = true;
+                startAutoLoadBtn.disabled = true;
+                stopAutoLoadBtn.disabled = false;
+
+                autoLoadingProgress()
+            }
+
+            xhr.open("POST", `/api/images/load`)
+            withAuth(xhr)
+            xhr.send()
+
+
+        });
+
+        stopAutoLoadBtn.addEventListener('click', () => {
+            let xhr = new XMLHttpRequest();
+
+            xhr.responseType = "json"
+            xhr.onload = () => {
+                if (!CheckCode(xhr)) {
+                    return
+                }
+
+                stopAutoLoading()
+            }
+
+            xhr.open("POST", `/api/images/load/stop`)
+            withAuth(xhr)
+            xhr.send()
+        });
+
+        function stopAutoLoading() {
+            if (loadingWs) {
+                loadingWs.close(1000, "")
+            }
+            clearInterval(autoLoadInterval);
+            isAutoLoading = false;
+            startAutoLoadBtn.disabled = false;
+            stopAutoLoadBtn.disabled = true;
+            autoLoadProgress.style.width = '0%';
+            autoLoadProgress.textContent = '0%';
+            loadStats(); // Обновляем статистику после остановки
+        }
+
+        function autoLoadingProgress() {
+            loadingWs = new WebSocket("ws://" + location.host + "/api/images/load/progress");
+
+            loadingWs.onmessage = (event) => {
+                console.log(event.data)
+                let progress = Number(event.data)
+                console.log(progress)
+
+
+                if (progress === 100 || progress === -1) {
+                    loadingWs.close(1000)
+                    stopAutoLoading();
+                    return;
+                }
+
+                autoLoadProgress.style.width = `${progress}%`;
+                autoLoadProgress.textContent = `${progress}%`;
+
+                if (!isAutoLoading) {
+                    loadingWs.close(1000)
+                }
+
+            };
+
+            loadingWs.onclose = (event) => {
+                console.log("websocket closed")
+                stopAutoLoading();
+            };
+
+            loadingWs.onerror = (err) => {
+                console.error(err)
+                stopAutoLoading();
+            };
+        }
+
+
+        // удаление изображения
+        deleteImageBtn.addEventListener('click', function () {
+            let productCode = Number(this.getAttribute("data-product-code"));
+            if (!productCode) {
+                console.error("invalid product code: ", productCode);
+                return;
+            }
+
+            if (!confirm('Вы уверены, что хотите удалить это изображение?')) {
+                return;
+            }
+
+            let xhr = new XMLHttpRequest();
+
+            xhr.responseType = "json"
+            xhr.onload = () => {
+                if (!CheckCode(xhr)) {
+                    return
+                }
+                checkProductCode.value = "";
+                checkedImage.style.display = 'none';
+                deleteImageBtn.style.display = 'none'
+            }
+
+            xhr.open("POST", `/api/images/delete?product_code=${productCode}`);
+            withAuth(xhr);
+            xhr.send();
+        })
+
+        // Проверка изображения по коду товара
+        checkImageBtn.addEventListener('click', function() {
+            const productCode = checkProductCode.value;
+
+            if (!productCode) {
+                alert('Пожалуйста, введите код товара');
+                return;
+            }
+
+            let xhr = new XMLHttpRequest();
+
+            xhr.responseType = "json"
+            xhr.onload = () => {
+                if (!CheckCode(xhr)) {
+                    return
+                }
+
+                if (xhr.response) {
+                    // В реальном приложении здесь будет URL изображения
+                    checkedImage.src = `/image/${productCode}.webp`;
+                    checkedImage.style.display = 'block';
+                    deleteImageBtn.style.display = 'block';
+                    deleteImageBtn.setAttribute("data-product-code", productCode)
+                    noImageMessage.style.display = 'none';
+
+                } else {
+                    checkedImage.style.display = 'none';
+                    deleteImageBtn.style.display = 'none';
+                    noImageMessage.style.display = 'block';
+                }
+            }
+
+            xhr.open("GET", `/api/images/exist?product_code=${productCode}`)
+            withAuth(xhr)
+            xhr.send()
+        });
+
+        // Загружаем статистику при открытии страницы
+        loadStats();
+    });
+
+    /**
+     * Показывает или скрывает индикатор загрузки
+     * @param {boolean} show - true для показа, false для скрытия
+     * @param {string} text - текст под спиннером (опционально)
+     */
+    function showLoadingIndicator(show, text = 'Загрузка...') {
+        let loader = document.getElementById('globalLoader');
+
+        if (show) {
+            if (!loader) {
+                loader = document.createElement('div');
+                loader.id = 'globalLoader';
+                loader.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background-color: rgba(0, 0, 0, 0.5);
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 9999;
+                        color: white;
+                        font-size: 1.2rem;
+                    `;
+
+                const spinner = document.createElement('div');
+                spinner.style.cssText = `
+                        width: 50px;
+                        height: 50px;
+                        border: 5px solid #f3f3f3;
+                        border-top: 5px solid #3498db;
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                        margin-bottom: 15px;
+                    `;
+
+                const textElement = document.createElement('div');
+                textElement.id = 'loaderText';
+
+                const style = document.createElement('style');
+                style.textContent = `
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                    `;
+
+                loader.appendChild(spinner);
+                loader.appendChild(textElement);
+                document.head.appendChild(style);
+                document.body.appendChild(loader);
+            }
+
+            if (text) {
+                document.getElementById('loaderText').textContent = text;
+            }
+            loader.style.display = 'flex';
+        } else {
+            if (loader) {
+                loader.style.display = 'none';
+            }
+        }
+    }
+</script>
+
+
+
+{{ end }}

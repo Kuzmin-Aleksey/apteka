@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лекарства в дорогу - аптека с быстрой доставкой</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/static/js/util.js"></script>
+    <style>
+        :root {
+            --primary-color: #2a7f62;
+            --secondary-color: #f8f9fa;
+            --accent-color: #ff6b6b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar-brand img {
+            height: 40px;
+        }
+
+        .pharmacy-card {
+            transition: transform 0.3s, box-shadow 0.3s;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .pharmacy-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-card {
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s;
+            height: 100%;
+        }
+
+        .product-card:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .promotion-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.8rem;
+        }
+
+        .product-img {
+            height: 180px;
+            object-fit: contain;
+            background-color: #f8f9fa;
+            padding: 10px;
+        }
+
+        .old-price {
+            text-decoration: line-through;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .cart-item-img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
+
+        #map {
+            height: 400px;
+            border-radius: 10px;
+        }
+
+        .store-info {
+            background-color: var(--secondary-color);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box .btn {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+        }
+
+        .out-of-stock {
+            opacity: 0.6;
+            position: relative;
+        }
+/*
+        .out-of-stock::after {
+            content: "Нет в наличии";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--accent-color);
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+*/
+        .quantity-control {
+            display: flex;
+            align-items: center;
+        }
+
+        .quantity-control button {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .quantity-control input {
+            width: 40px;
+            text-align: center;
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+<!-- Навигационная панель -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="#">
+            <img src="https://via.placeholder.com/150x50?text=Лекарства+в+дорогу" alt="" class="me-2">
+            <span class="d-none d-sm-inline">Лекарства в дорогу</span>
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#">Главная</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/stores">Аптеки</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Акции</a>
+                </li>
+            </ul>
+
+            <div class="d-flex">
+                <button class="btn btn-outline-light position-relative" data-bs-toggle="offcanvas"
+                        data-bs-target="#cartOffcanvas">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                          id="cartCount">0</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Основное содержимое -->
+<div class="container my-4">
+    <div class="row">
+        <!-- Блок выбора аптеки -->
+
+
+        <!-- Блок поиска и товаров -->
+        <div class="col-lg-8">
+            <!-- Блок поиска -->
+            <div class="search-box mb-4">
+                <input type="text" class="form-control pe-5" id="searchInput" placeholder="Поиск лекарств и товаров...">
+                <button class="btn btn-primary" id="searchBtn">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+
+            <!-- Результаты поиска (изначально скрыт) -->
+            <div id="searchResults" class="d-none">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4>Результаты поиска</h4>
+                    <span id="searchResultsCount" class="badge bg-primary">Найдено: 0</span>
+                </div>
+
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4" id="searchResultsContainer">
+                    <!-- Здесь будут карточки найденных товаров -->
+                </div>
+            </div>
+
+            <!-- Пагинация -->
+            <div class="d-flex justify-content-center mt-4">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination" id="pagination">
+                        <!-- Пагинация будет генерироваться динамически -->
+                    </ul>
+                </nav>
+            </div>
+
+            <!-- Модальное окно с детальной информацией о товаре -->
+            <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="productModalTitle">Название товара</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <img id="productModalImage"
+                                         src="https://via.placeholder.com/400x400?text=Изображение+товара"
+                                         class="img-fluid rounded mb-3" alt="Изображение товара">
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <h6>Описание</h6>
+                                        <p id="productModalDescription">Описание товара будет здесь</p>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <h6>Цена</h6>
+                                            <div class="h4 text-primary" id="productModalPrice">0 ₽</div>
+                                            <div class="text-muted small" id="productModalOldPrice"></div>
+                                        </div>
+                                        <div class="col-6">
+                                            <h6>Наличие</h6>
+                                            <span id="productModalStock" class="badge bg-success">В наличии</span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <h6>Производитель</h6>
+                                        <p id="productModalProducer">Не указано</p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <h6>Страна</h6>
+                                        <p id="productModalCountry">Не указано</p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <h6>GTIN</h6>
+                                        <p id="productModalGTIN">Не указано</p>
+                                    </div>
+                                    <div class="quantity-control d-flex align-items-center mb-3">
+                                        <label class="me-2">Количество:</label>
+                                        <button class="btn btn-outline-secondary decrease-qty">-</button>
+                                        <input type="number" min="1" value="1" class="form-control mx-2 item-qty"
+                                               style="width: 60px;">
+                                        <button class="btn btn-outline-secondary increase-qty">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                            <button type="button" class="btn btn-primary" id="addToCartFromModal">
+                                <i class="fas fa-cart-plus me-1"></i> Добавить в корзину
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h4 class="mb-3">Акции</h4>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4" id="promotionsContainer">
+                <!-- Акции будут загружаться здесь -->
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Оффканвас корзины -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Ваша корзина</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="list-group mb-3" id="cartItems">
+            <!-- Товары в корзине будут здесь -->
+            <div class="list-group-item">
+                <div class="d-flex align-items-center">
+                    <img src="https://via.placeholder.com/100?text=Товар" class="cart-item-img me-3" alt="Товар">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">Название товара</h6>
+                        <small class="text-muted">1200 ₽ за шт.</small>
+                    </div>
+                    <div class="quantity-control">
+                        <button class="btn btn-sm btn-outline-secondary decrease-qty">-</button>
+                        <input type="number" min="1" value="1" class="form-control form-control-sm item-qty">
+                        <button class="btn btn-sm btn-outline-secondary increase-qty">+</button>
+                    </div>
+                    <div class="fw-bold ms-3 item-total">1200 ₽</div>
+                    <button class="btn btn-sm btn-outline-danger ms-2 remove-item">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5>Итого:</h5>
+            <h5 class="text-primary" id="cartTotal">0 ₽</h5>
+        </div>
+
+        <button class="btn btn-primary w-100 mb-2" id="checkoutBtn">
+            <i class="fas fa-shopping-bag me-2"></i>Оформить заказ
+        </button>
+        <button class="btn btn-outline-secondary w-100" id="clearCartBtn">
+            <i class="fas fa-trash-alt me-2"></i>Очистить корзину
+        </button>
+    </div>
+</div>
+
+<!-- Подвал -->
+<footer class="bg-dark text-white py-4 mt-4">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <h5>Лекарства в дорогу</h5>
+                <p>Аптечная сеть с быстрой доставкой лекарств и товаров для здоровья.</p>
+            </div>
+            <div class="col-md-4">
+                <h5>Контакты</h5>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-phone me-2"></i> +7 (123) 456-7890</li>
+                    <li><i class="fas fa-envelope me-2"></i> info@lekarstva-v-dorogu.ru</li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h5>Режим работы</h5>
+                <p>Круглосуточно, без выходных</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const params = new URLSearchParams(location.search);
+    const storeId = params.get("store");
+    let products = [];
+    let promotions = [];
+
+    function CheckCode(xhr) {
+        if (xhr.status === StatusOk) {
+            return true
+        }
+        alert(`Ошибка ${xhr.status}`)
+        return false
+    }
+
+    function processProducts() {
+        document.querySelectorAll("img.product-img").forEach(el => {
+            el.addEventListener("error", function () {
+                el.setAttribute("src", "https://xn--90agcbozdwe4a.xn--p1ai/wp-content/uploads/2019/01/no_product.png")
+                el.addEventListener("error", function (){})
+            })
+        })
+    }
+
+
+    // Настройки пагинации
+    const paginationConfig = {
+        itemsPerPage: 20,  // Количество товаров на странице
+        visiblePages: 5   // Количество видимых номеров страниц
+    };
+
+    // Функция для отображения результатов поиска с пагинацией
+    function displaySearchResults(products, page = 1) {
+        const resultsContainer = document.getElementById('searchResultsContainer');
+        const resultsCount = document.getElementById('searchResultsCount');
+        const searchResults = document.getElementById('searchResults');
+        const pagination = document.getElementById('pagination');
+
+        // Очищаем предыдущие результаты
+        resultsContainer.innerHTML = '';
+        pagination.innerHTML = '';
+
+        if (products.length === 0) {
+            resultsContainer.innerHTML = `
+      <div class="col-12 text-center py-4">
+        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+        <h5>Ничего не найдено</h5>
+        <p>Попробуйте изменить параметры поиска</p>
+      </div>
+    `;
+            searchResults.classList.remove('d-none');
+            return;
+        }
+
+        // Рассчитываем пагинацию
+        const totalPages = Math.ceil(products.length / paginationConfig.itemsPerPage);
+        const startIndex = (page - 1) * paginationConfig.itemsPerPage;
+        const endIndex = Math.min(startIndex + paginationConfig.itemsPerPage, products.length);
+        const paginatedProducts = products.slice(startIndex, endIndex);
+
+        // Отображаем товары для текущей страницы
+        paginatedProducts.forEach(product => {
+            const productCard = document.createElement('div');
+            productCard.className = 'col';
+
+            const promotion = promotions.find(p => p.product_code === product.id);
+
+            productCard.innerHTML = `
+      <div class="card product-card h-100 ${product.count <= 0 ? 'out-of-stock' : ''}"
+           data-product-id="${product.id}" onclick="showProductDetails(${product.id})">
+        ${promotion ? '<div class="promotion-badge badge bg-danger">Акция</div>' : ''}
+        <img src="/image/${product.id}.webp"
+             class="card-img-top product-img" alt="${product.name}">
+        <div class="card-body">
+          <h5 class="card-title">${product.name}</h5>
+          <p class="card-text text-muted small">${product.producer || 'Производитель не указан'}</p>
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              ${promotion ? `<span class="old-price">${product.price/100} ₽</span>
+              <div class="fw-bold text-primary">${(product.price/100) - promotion.discount} ₽</div>` :
+                `<div class="fw-bold">${product.price/100} ₽</div>`}
+            </div>
+            <button class="btn btn-sm ${product.count <= 0 ? 'btn-outline-secondary disabled' : 'btn-outline-primary'}"
+                    ${product.count <= 0 ? 'disabled' : ''}>
+              ${product.count <= 0 ? 'Нет в наличии' : 'В корзину'}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+            resultsContainer.appendChild(productCard);
+        });
+
+        processProducts();
+
+        // Генерируем пагинацию
+        if (totalPages > 1) {
+            // Кнопка "Назад"
+            const prevLi = document.createElement('li');
+            prevLi.className = `page-item ${page === 1 ? 'disabled' : ''}`;
+            prevLi.innerHTML = `<a class="page-link" href="#" aria-label="Previous" data-page="${page - 1}">
+      <span aria-hidden="true">&laquo;</span>
+    </a>`;
+            pagination.appendChild(prevLi);
+
+            // Номера страниц
+            const startPage = Math.max(1, page - Math.floor(paginationConfig.visiblePages / 2));
+            const endPage = Math.min(totalPages, startPage + paginationConfig.visiblePages - 1);
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageLi = document.createElement('li');
+                pageLi.className = `page-item ${i === page ? 'active' : ''}`;
+                pageLi.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
+                pagination.appendChild(pageLi);
+            }
+
+            // Кнопка "Вперед"
+            const nextLi = document.createElement('li');
+            nextLi.className = `page-item ${page === totalPages ? 'disabled' : ''}`;
+            nextLi.innerHTML = `<a class="page-link" href="#" aria-label="Next" data-page="${page + 1}">
+      <span aria-hidden="true">&raquo;</span>
+    </a>`;
+            pagination.appendChild(nextLi);
+        }
+
+        resultsCount.textContent = `Найдено: ${products.length}`;
+        searchResults.classList.remove('d-none');
+
+        // Прокручиваем к началу результатов
+        searchResults.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Обработчик кликов по пагинации
+    document.getElementById('pagination').addEventListener('click', function(e) {
+        e.preventDefault();
+
+        if (e.target.tagName === 'A') {
+            const page = parseInt(e.target.dataset.page);
+            if (!isNaN(page)) {
+                // Сохраняем текущие результаты поиска
+                const searchTerm = document.getElementById('searchInput').value.trim()
+
+                displaySearchResults(products, page);
+            }
+        }
+    });
+
+
+    // Функция для показа детальной информации о товаре
+    function showProductDetails(productId) {
+        const product = products.find(p => p.id === productId);
+        const promotion = promotions.find(p => p.product_code === productId);
+        const modal = new bootstrap.Modal(document.getElementById('productModal'));
+        console.log(product)
+        if (!product) return;
+
+        // Заполняем модальное окно данными
+        document.getElementById('productModalTitle').textContent = product.name;
+        document.getElementById('productModalDescription').textContent = product.description || 'Описание отсутствует';
+        document.getElementById('productModalImage').src = `/image/${product.id}.webp`
+        document.getElementById('productModalProducer').textContent = product.producer || 'Не указано';
+        document.getElementById('productModalCountry').textContent = product.country || 'Не указано';
+        document.getElementById('productModalGTIN').textContent = product.gtin || 'Не указано';
+
+        if (promotion) {
+            document.getElementById('productModalPrice').textContent = `${(product.price/100) - promotion.discount} ₽`;
+            document.getElementById('productModalOldPrice').innerHTML = `<del>${product.price/100} ₽</del>`;
+        } else {
+            document.getElementById('productModalPrice').textContent = `${product.price} ₽`;
+            document.getElementById('productModalOldPrice').textContent = '';
+        }
+
+        const stockBadge = document.getElementById('productModalStock');
+        if (product.count <= 0) {
+            stockBadge.textContent = 'Нет в наличии';
+            stockBadge.className = 'badge bg-danger';
+            document.getElementById('addToCartFromModal').disabled = true;
+        } else {
+            stockBadge.textContent = 'В наличии';
+            stockBadge.className = 'badge bg-success';
+            document.getElementById('addToCartFromModal').disabled = false;
+        }
+
+        // Показываем модальное окно
+        modal.show();
+        console.log("show modal")
+    }
+
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const promotionsContainer = document.getElementById("promotionsContainer");
+        const searchBtn = document.getElementById('searchBtn');
+
+        // Обработчик поиска
+        searchBtn.addEventListener('click', function() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+
+            let xhr = new XMLHttpRequest();
+
+            xhr.responseType = "json"
+            xhr.onload = () => {
+                if (!CheckCode(xhr)) {
+                    return
+                }
+
+                products = xhr.response? xhr.response : []
+
+                displaySearchResults(products);
+
+            }
+            xhr.open("GET", `/api/products/search?store_id=${storeId}&q=${searchTerm}`);
+            xhr.send();
+        });
+
+        // Можно добавить поиск при нажатии Enter
+        searchBtn.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchBtn.click();
+            }
+        });
+
+
+        function LoadPromotion() {
+            let xhr = new XMLHttpRequest();
+
+            xhr.responseType = "json"
+            xhr.onload = () => {
+                if (!CheckCode(xhr)) {
+                    return
+                }
+
+                promotions = xhr.response;
+
+                let promotionsHtml = ''
+
+                for (let promo of promotions) {
+                    console.log(promo)
+                    if (promo.in_stock) {
+                        promotionsHtml += `
+                    <div class="col">
+                    <div class="card product-card">
+                        <div class="promotion-badge badge bg-danger">Акция</div>
+                        <img src="/image/${promo.product_code}.webp" class="card-img-top product-img">
+                        <div class="card-body">
+                            <h5 class="card-title">${promo.product_name}</h5>
+                            <p class="card-text text-muted small">Производитель: Страна</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="old-price">${promo.price_without_discount / 100} ₽</span>
+                                    <div class="fw-bold text-primary">${(promo.price_without_discount - promo.discount * 100) / 100} ₽</div>
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary">В корзину</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`
+                    } else {
+                        promotionsHtml += `
+                    <div class="col">
+                    <div class="card product-card out-of-stock" onclick="showProductDetails()">
+                        <div class="promotion-badge badge bg-danger">Акция</div>
+                        <img src="/image/${promo.product_code}.webp" class="card-img-top product-img">
+                        <div class="card-body">
+                            <h5 class="card-title">${promo.product_name}</h5>
+                            <p class="card-text text-muted small">Производитель: Страна</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <button class="btn btn-sm btn-outline-secondary" disabled>
+                                  Нет в наличии
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`
+                    }
+                }
+
+                promotionsContainer.innerHTML = promotionsHtml
+
+                processProducts()
+            }
+
+            xhr.open("GET", `/api/promotion/get?store_id=${storeId}`)
+            xhr.send()
+        }
+
+
+        LoadPromotion()
+    })
+
+
+</script>
+</body>
+</html>

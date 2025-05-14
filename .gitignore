@@ -1,0 +1,7 @@
+**/.idea
+**/config.yaml
+**/config.json
+**/*.exe
+**/*.bin
+**/*.log
+**/media/prod_images/*
