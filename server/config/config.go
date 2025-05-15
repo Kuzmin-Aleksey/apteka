@@ -1,9 +1,10 @@
 package config
 
 import (
-	"fmt"
+	"errors"
 	"github.com/ilyakaznacheev/cleanenv"
-	"reflect"
+	"github.com/joho/godotenv"
+	"os"
 	"time"
 )
 
@@ -59,20 +60,16 @@ type ImagesConfig struct {
 	AutoLoadDelay time.Duration `json:"auto_load_delay" yaml:"auto_load_delay"`
 }
 
-func ReadConfig(path string) (*Config, error) {
+func ReadConfig(path string, dotenv ...string) (*Config, error) {
+	if err := godotenv.Load(dotenv...); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, err
+		}
+	}
+
 	cfg := new(Config)
 	if err := cleanenv.ReadConfig(path, cfg); err != nil {
 		return nil, err
 	}
-
-	v := reflect.Indirect(reflect.ValueOf(*cfg))
-	fields := reflect.VisibleFields(reflect.TypeOf(*cfg))
-	for _, field := range fields {
-		f := v.FieldByName(field.Name)
-		if f.IsNil() {
-			return nil, fmt.Errorf("config %s not found", field.Tag.Get("yaml"))
-		}
-	}
-
 	return cfg, nil
 }
