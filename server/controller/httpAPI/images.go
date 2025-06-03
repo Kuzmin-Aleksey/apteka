@@ -4,8 +4,8 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.org/x/net/context"
 	"net/http"
-	"server/data/image_parser"
-	"server/domain/models"
+	"server/internal/infrastructure/integration/image_parser"
+	"server/pkg/failure"
 	"strconv"
 	"strings"
 	"time"
@@ -69,19 +69,19 @@ func (h *Handler) ApiSaveImage(w http.ResponseWriter, r *http.Request) {
 	imgType := r.Header.Get("Content-Type")
 
 	if strings.HasPrefix("image/", imgType) {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid image type", imgType))
-		return
-	}
-
-	img, err := image_parser.ConvertToWebp(r.Body, imgType)
-	if err != nil {
-		h.writeError(w, models.NewError(models.ErrUnknown, "cannot convert image", err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid image type: "+imgType))
 		return
 	}
 
 	prodCode, err := strconv.Atoi(r.FormValue("product_code"))
 	if err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid product code ", r.FormValue("product_code"), err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid product code: "+r.FormValue("product_code")+": "+err.Error()))
+		return
+	}
+
+	img, err := image_parser.ConvertToWebp(r.Body, imgType)
+	if err != nil {
+		h.writeError(w, failure.NewInternalError("cannot convert image: "+err.Error()))
 		return
 	}
 
@@ -104,7 +104,7 @@ func (h *Handler) ApiGetImagesStat(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ApiCheckImage(w http.ResponseWriter, r *http.Request) {
 	prodCode, err := strconv.Atoi(r.FormValue("product_code"))
 	if err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid product code ", r.FormValue("product_code"), err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid product code: "+r.FormValue("product_code")+": "+err.Error()))
 		return
 	}
 
@@ -116,7 +116,7 @@ func (h *Handler) ApiCheckImage(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ApiDeleteImage(w http.ResponseWriter, r *http.Request) {
 	prodCode, err := strconv.Atoi(r.FormValue("product_code"))
 	if err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid product code ", r.FormValue("product_code"), err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid product code: "+r.FormValue("product_code")+": "+err.Error()))
 		return
 	}
 

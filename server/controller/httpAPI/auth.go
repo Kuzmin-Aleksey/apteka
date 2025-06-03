@@ -2,7 +2,7 @@ package httpAPI
 
 import (
 	"net/http"
-	"server/domain/models"
+	"server/pkg/failure"
 	"strings"
 )
 
@@ -13,7 +13,7 @@ type LoginInRequest struct {
 
 func (h *Handler) ApiHandleLogin(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid form", err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid form"+": "+err.Error()))
 		return
 	}
 

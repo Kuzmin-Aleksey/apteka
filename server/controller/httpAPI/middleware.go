@@ -1,9 +1,10 @@
 package httpAPI
 
 import (
+	"fmt"
 	"golang.org/x/net/context"
 	"net/http"
-	"server/domain/models"
+	"server/pkg/failure"
 	"strings"
 	"time"
 )
@@ -47,16 +48,16 @@ func (h *Handler) MwWithApiKey(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		typeAndKey := strings.Split(r.Header.Get("Authorization"), " ")
 		if len(typeAndKey) != 2 {
-			h.writeError(w, models.NewError(models.ErrUnauthorized, "invalid authorization header"))
+			h.writeError(w, failure.NewUnauthorized("invalid authorization header"))
 			return
 		}
 		if typeAndKey[0] != "ApiKey" {
-			h.writeError(w, models.NewError(models.ErrUnauthorized, "invalid auth type"))
+			h.writeError(w, failure.NewUnauthorized("invalid auth type"))
 			return
 		}
 		key := typeAndKey[1]
 		if key != h.ApiKey {
-			h.writeError(w, models.NewError(models.ErrUnauthorized, "invalid api key"))
+			h.writeError(w, failure.NewUnauthorized("invalid api key"))
 			return
 		}
 
@@ -73,21 +74,21 @@ func (h *Handler) MwAuth(next http.HandlerFunc) http.HandlerFunc {
 
 		typeAndToken := strings.Split(str, " ")
 		if len(typeAndToken) != 2 {
-			h.writeError(w, models.NewError(models.ErrUnauthorized, "invalid authorization header", typeAndToken))
+			h.writeError(w, failure.NewUnauthorized("invalid authorization header"+fmt.Sprint(typeAndToken)))
 			return
 		}
 		if typeAndToken[0] != "Bearer" {
-			h.writeError(w, models.NewError(models.ErrUnauthorized, "invalid auth type"))
+			h.writeError(w, failure.NewUnauthorized("invalid auth type"))
 			return
 		}
 		token := typeAndToken[1]
 		ok, err := h.auth.CheckSession(r.Context(), token)
 		if err != nil {
-			h.writeError(w, models.NewError(models.ErrUnauthorized, err))
+			h.writeError(w, failure.NewUnauthorized(err.Error()))
 			return
 		}
 		if !ok {
-			h.writeError(w, models.NewError(models.ErrUnauthorized, "invalid token"))
+			h.writeError(w, failure.NewUnauthorized("invalid token"))
 			return
 		}
 		next(w, r)

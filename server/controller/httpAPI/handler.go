@@ -8,12 +8,12 @@ import (
 	"os"
 	"path/filepath"
 	"server/config"
-	"server/domain/service/auth"
-	"server/domain/service/booking"
-	"server/domain/service/images"
-	"server/domain/service/products"
-	"server/domain/service/promotion"
-	"server/domain/service/store"
+	"server/internal/domain/service/auth"
+	"server/internal/domain/service/booking"
+	"server/internal/domain/service/images"
+	"server/internal/domain/service/products"
+	"server/internal/domain/service/promotion"
+	"server/internal/domain/service/store"
 	"time"
 )
 

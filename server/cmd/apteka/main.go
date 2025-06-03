@@ -2,8 +2,8 @@ package main
 
 import (
 	"log"
-	"server/app"
 	"server/config"
+	"server/internal/app/app"
 )
 
 const configPath = "config/config.yaml"

@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"server/domain/models"
+	"server/internal/domain/entity"
+	"server/pkg/failure"
 	"strconv"
 )
 
 func (h *Handler) ApiHandleGetPromotion(w http.ResponseWriter, r *http.Request) {
 	storeId, err := strconv.Atoi(r.FormValue("store_id"))
 	if err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid form value store_id", r.FormValue("store_id"), err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid form value store_id"+r.FormValue("store_id")+": "+err.Error()))
 		return
 	}
 
@@ -36,11 +37,11 @@ func (h *Handler) ApiHandleGetAllPromotion(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *Handler) ApiNewPromotion(w http.ResponseWriter, r *http.Request) {
-	promo := new(models.Promotion)
+	promo := new(entity.Promotion)
 	b, _ := io.ReadAll(r.Body)
 
 	if err := json.NewDecoder(bytes.NewReader(b)).Decode(promo); err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid json", err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid json"+err.Error()))
 		return
 	}
 
@@ -61,9 +62,9 @@ func (h *Handler) ApiUploadPromotion(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ApiUpdatePromotion(w http.ResponseWriter, r *http.Request) {
-	promo := new(models.Promotion)
+	promo := new(entity.Promotion)
 	if err := json.NewDecoder(r.Body).Decode(promo); err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid json", err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid json"+": "+err.Error()))
 		return
 	}
 
@@ -83,7 +84,7 @@ func (h *Handler) ApiDeleteAllPromotion(w http.ResponseWriter, r *http.Request) 
 func (h *Handler) ApiDeletePromotion(w http.ResponseWriter, r *http.Request) {
 	code, err := strconv.Atoi(r.FormValue("product_code"))
 	if err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid product code", err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid product code"+": "+err.Error()))
 		return
 	}
 

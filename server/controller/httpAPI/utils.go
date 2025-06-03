@@ -2,10 +2,10 @@ package httpAPI
 
 import (
 	"encoding/json"
-	"errors"
 	"html/template"
 	"net/http"
-	"server/domain/models"
+	"server/pkg/errcodes"
+	"server/pkg/failure"
 )
 
 func (h *Handler) writeJSON(w http.ResponseWriter, v any) {
@@ -26,10 +26,11 @@ func (h *Handler) writeError(w http.ResponseWriter, err error) {
 	h.l.Println(err)
 	w.Header().Set("Content-Type", "application/json")
 
-	domainErr := models.GetDomainErr(err)
-	w.WriteHeader(getErrorStatus(domainErr))
+	code, status := getErrorStatus(err)
 
-	if e := json.NewEncoder(w).Encode(responseError{domainErr.Error()}); e != nil {
+	w.WriteHeader(status)
+
+	if e := json.NewEncoder(w).Encode(responseError{code.String()}); e != nil {
 		h.l.Println("json encoding error:", e)
 	}
 }
@@ -38,27 +39,29 @@ func (h *Handler) handleTemplate(tmpPath ...string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tmp, err := template.ParseFiles(tmpPath...)
 		if err != nil {
-			h.writeError(w, models.NewError(models.ErrUnknown, "parse template", err))
+			h.writeError(w, failure.NewInternalError("parse template: "+err.Error()))
 			return
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if err := tmp.Execute(w, nil); err != nil {
-			h.writeError(w, models.NewError(models.ErrUnknown, "execute template", err))
+			h.writeError(w, failure.NewInternalError("execute template: "+err.Error()))
 			return
 		}
 	}
 }
 
-func getErrorStatus(err error) int {
+func getErrorStatus(err error) (errcodes.Code, int) {
 	switch {
-	case errors.Is(err, models.ErrNotFound):
-		return http.StatusNotFound
-	case errors.Is(err, models.ErrInvalidRequest), errors.Is(err, models.ErrInvalidFile):
-		return http.StatusBadRequest
-	case errors.Is(err, models.ErrInvalidLoginOrPassword), errors.Is(err, models.ErrUnauthorized):
-		return http.StatusUnauthorized
+	case failure.IsNotFoundError(err):
+		return errcodes.ErrNotFound, http.StatusNotFound
+	case failure.IsInvalidRequestError(err):
+		return errcodes.ErrInvalidRequest, http.StatusBadRequest
+	case failure.IsInvalidFileError(err):
+		return errcodes.ErrInvalidFile, http.StatusBadRequest
+	case failure.IsUnauthorizedError(err):
+		return errcodes.ErrUnauthorized, http.StatusUnauthorized
 	default:
-		return http.StatusInternalServerError
+		return errcodes.ErrUnknown, http.StatusInternalServerError
 	}
 }

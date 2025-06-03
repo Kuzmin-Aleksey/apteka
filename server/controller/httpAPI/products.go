@@ -2,15 +2,15 @@ package httpAPI
 
 import (
 	"net/http"
-	"server/domain/models"
-	"server/domain/service/products/product_decoder"
+	"server/internal/domain/service/products/product_decoder"
+	"server/pkg/failure"
 	"strconv"
 )
 
 func (h *Handler) ApiHandleSearchProducts(w http.ResponseWriter, r *http.Request) {
 	storeId, err := strconv.Atoi(r.FormValue("store_id"))
 	if err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid form value store_id", r.FormValue("store_id"), err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid form value store_id "+r.FormValue("store_id")+": "+err.Error()))
 		return
 	}
 

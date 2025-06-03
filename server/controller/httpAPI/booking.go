@@ -3,8 +3,8 @@ package httpAPI
 import (
 	"encoding/json"
 	"net/http"
-	"server/domain/models"
-	"server/domain/service/booking"
+	"server/internal/domain/service/booking"
+	"server/pkg/failure"
 	"strconv"
 	"time"
 )
@@ -16,17 +16,17 @@ type BookResponse struct {
 func (h *Handler) ApiToBook(w http.ResponseWriter, r *http.Request) {
 	dto := new(booking.CreateBookDTO)
 	if err := json.NewDecoder(r.Body).Decode(dto); err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid json", err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid json"+": "+err.Error()))
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid form", err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid form"+": "+err.Error()))
 		return
 	}
 	storeId, err := strconv.Atoi(r.Form.Get("store_id"))
 	if err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid store id", err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid store id"+": "+err.Error()))
 		return
 	}
 
@@ -41,13 +41,13 @@ func (h *Handler) ApiToBook(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ApiBookUpdateStatus(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid form", err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid form"+": "+err.Error()))
 		return
 	}
 
 	bookId, err := strconv.Atoi(r.Form.Get("book_id"))
 	if err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid book id", err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid book id"+": "+err.Error()))
 		return
 	}
 
@@ -62,7 +62,7 @@ func (h *Handler) ApiBookUpdateStatus(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ApiGetBook(w http.ResponseWriter, r *http.Request) {
 	bookId, err := strconv.Atoi(r.FormValue("book_id"))
 	if err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid book id", err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid book id"+": "+err.Error()))
 		return
 	}
 
@@ -78,7 +78,7 @@ func (h *Handler) ApiGetBook(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ApiGetStoreBookings(w http.ResponseWriter, r *http.Request) {
 	storeId, err := strconv.Atoi(r.FormValue("store_id"))
 	if err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid store id", err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid store id"+": "+err.Error()))
 		return
 	}
 
@@ -94,7 +94,7 @@ func (h *Handler) ApiGetStoreBookings(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ApiDeleteBooking(w http.ResponseWriter, r *http.Request) {
 	bookId, err := strconv.Atoi(r.FormValue("book_id"))
 	if err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid book id", err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid book id"+": "+err.Error()))
 		return
 	}
 
@@ -107,7 +107,7 @@ func (h *Handler) ApiDeleteBooking(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ApiSetBookingDelay(w http.ResponseWriter, r *http.Request) {
 	delay, err := strconv.Atoi(r.FormValue("delay"))
 	if err != nil {
-		h.writeError(w, models.NewError(models.ErrInvalidRequest, "invalid delay", err))
+		h.writeError(w, failure.NewInvalidRequestError("invalid delay id"+": "+err.Error()))
 		return
 	}
 
