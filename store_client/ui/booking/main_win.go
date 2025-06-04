@@ -1,8 +1,7 @@
 package booking
 
 import (
-	"apteka_booking/models"
-	"apteka_booking/ui/util"
+	"errors"
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -12,6 +11,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"log"
 	"slices"
+	"store_client/models"
+	"store_client/ui/util"
 	"sync"
 	"time"
 )
@@ -197,10 +198,12 @@ func (w *Window) ShowAndRun() {
 
 func (w *Window) pingServer() {
 	if err := w.s.Ping(); err != nil {
+		log.Println(err)
+
 		var wg sync.WaitGroup
 		wg.Add(1)
 
-		d := dialog.NewError(fmt.Errorf("Сервер недоступен\n %w", err), w)
+		d := dialog.NewError(errors.New("Сервер недоступен"), w)
 		d.Show()
 		d.SetOnClosed(func() {
 			wg.Done()

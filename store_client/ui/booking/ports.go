@@ -1,6 +1,6 @@
 package booking
 
-import "apteka_booking/models"
+import "store_client/models"
 
 type Service interface {
 	Ping() error

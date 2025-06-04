@@ -1,9 +1,9 @@
 package ui
 
 import (
-	"apteka_booking/ui/booking"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"store_client/ui/booking"
 )
 
 type UI struct {

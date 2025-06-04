@@ -1,10 +1,10 @@
 package main
 
 import (
-	"apteka_booking/config"
-	"apteka_booking/service"
-	"apteka_booking/ui"
 	"log"
+	"store_client/config"
+	"store_client/service"
+	"store_client/ui"
 )
 
 func main() {

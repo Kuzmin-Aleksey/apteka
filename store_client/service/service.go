@@ -1,16 +1,18 @@
 package service
 
 import (
-	"apteka_booking/config"
-	"apteka_booking/models"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"slices"
+	"store_client/config"
+	"store_client/models"
+	"store_client/pkg/failure"
 	"strconv"
 	"strings"
 )
@@ -45,12 +47,18 @@ func (s *Service) GetBookings() ([]models.Booking, error) {
 
 	resp, err := http.DefaultClient.Do(r)
 	if err != nil {
+		if errors.As(err, new(net.Error)) {
+			return nil, failure.NewNetworkError(err.Error())
+		}
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
+		if resp.StatusCode == http.StatusUnauthorized {
+			return nil, failure.NewUnauthorizedError(readError(resp.Body), resp.StatusCode)
+		}
+		return nil, failure.NewServerError(readError(resp.Body), resp.StatusCode)
 	}
 
 	var books []models.Booking
@@ -89,11 +97,17 @@ func (s *Service) SetBookingStatus(id int, status string) error {
 
 	resp, err := http.DefaultClient.Do(r)
 	if err != nil {
+		if errors.As(err, new(net.Error)) {
+			return failure.NewNetworkError(err.Error())
+		}
 		return err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
+		if resp.StatusCode == http.StatusUnauthorized {
+			return failure.NewUnauthorizedError(readError(resp.Body), resp.StatusCode)
+		}
+		return failure.NewServerError(readError(resp.Body), resp.StatusCode)
 	}
 
 	return nil
@@ -146,11 +160,17 @@ func (s *Service) deleteBooking(id int) error {
 
 	resp, err := http.DefaultClient.Do(r)
 	if err != nil {
+		if errors.As(err, new(net.Error)) {
+			return failure.NewNetworkError(err.Error())
+		}
 		return err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
+		if resp.StatusCode == http.StatusUnauthorized {
+			return failure.NewUnauthorizedError(readError(resp.Body), resp.StatusCode)
+		}
+		return failure.NewServerError(readError(resp.Body), resp.StatusCode)
 	}
 
 	return nil
@@ -186,4 +206,18 @@ var statusesSortMap = map[string]int{
 	models.BookStatusConfirmed: 2,
 	models.BookStatusRejected:  3,
 	models.BookStatusDone:      4,
+}
+
+type errorResponse struct {
+	Error string `json:"error"`
+}
+
+func readError(r io.Reader) string {
+	var e errorResponse
+
+	if err := json.NewDecoder(r).Decode(&e); err != nil {
+		log.Println("decode error:", err)
+	}
+
+	return e.Error
 }
