@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"apteka_client/models"
+	"efarma_integration/models"
 )
 
 func MergingDuplicates(products []models.Product) []models.Product {

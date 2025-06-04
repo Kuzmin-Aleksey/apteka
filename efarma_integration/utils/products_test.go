@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"apteka_client/models"
+	"efarma_integration/models"
 	"fmt"
 	"testing"
 )

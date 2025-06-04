@@ -1,8 +1,8 @@
 package repo
 
 import (
-	"apteka_client/models"
 	"database/sql"
+	"efarma_integration/models"
 	"fmt"
 	"os"
 )

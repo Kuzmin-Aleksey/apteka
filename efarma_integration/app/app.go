@@ -1,10 +1,10 @@
 package app
 
 import (
-	"apteka_client/models"
-	"apteka_client/products_encoder"
-	"apteka_client/utils"
 	"bytes"
+	"efarma_integration/models"
+	"efarma_integration/products_encoder"
+	"efarma_integration/utils"
 	"io"
 	"log"
 )

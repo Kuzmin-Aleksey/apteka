@@ -1,12 +1,12 @@
 package main
 
 import (
-	"apteka_client/DB"
-	"apteka_client/app"
-	"apteka_client/config"
-	"apteka_client/repo"
-	"apteka_client/unloadAdapter/client"
-	"apteka_client/unloadAdapter/file"
+	"efarma_integration/DB"
+	"efarma_integration/app"
+	"efarma_integration/config"
+	"efarma_integration/repo"
+	"efarma_integration/unloadAdapter/client"
+	"efarma_integration/unloadAdapter/file"
 	"io"
 	"log"
 	"os"

@@ -1,7 +1,7 @@
 package client
 
 import (
-	"apteka_client/config"
+	"efarma_integration/config"
 	"fmt"
 	"io"
 	"net/http"

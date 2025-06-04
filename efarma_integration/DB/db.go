@@ -1,8 +1,8 @@
 package DB
 
 import (
-	"apteka_client/config"
 	"database/sql"
+	"efarma_integration/config"
 	"fmt"
 	_ "github.com/denisenkom/go-mssqldb"
 )

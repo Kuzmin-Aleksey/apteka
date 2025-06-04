@@ -1,7 +1,7 @@
 package products_encoder
 
 import (
-	"apteka_client/models"
+	"efarma_integration/models"
 	"encoding/binary"
 	"fmt"
 	"io"
