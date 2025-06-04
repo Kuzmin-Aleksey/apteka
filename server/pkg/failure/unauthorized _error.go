@@ -8,7 +8,7 @@ type UnauthorizedError struct {
 	baseError
 }
 
-func NewUnauthorized(msg string) error {
+func NewUnauthorizedError(msg string) error {
 	return UnauthorizedError{
 		baseError: newBaseError(msg),
 	}

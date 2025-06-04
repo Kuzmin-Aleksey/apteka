@@ -44,7 +44,7 @@ func (s *AuthService) Login(ctx context.Context, login, password string) (string
 		return uid, nil
 	}
 
-	return "", failure.NewUnauthorized("invalid login or password")
+	return "", failure.NewUnauthorizedError("invalid login or password")
 }
 
 func (s *AuthService) Logout(ctx context.Context, uid string) error {
