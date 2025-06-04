@@ -117,9 +117,9 @@ func (w *Window) updateItem(i widget.ListItemID, item fyne.CanvasObject) {
 
 	delBtn := item.(*fyne.Container).Objects[3].(*widget.Button)
 
+	id := w.bookings[i].Id
 	delBtn.OnTapped = func() {
-
-		w.deleteBooking(i)
+		w.deleteBooking(id)
 	}
 }
 
