@@ -53,6 +53,12 @@
         return true
     }
 
+    function OnUnauthorized(msg) {
+        console.error(msg);
+        alert("Требуется авторизация");
+        location.replace("/admin/login")
+    }
+
     let xhr = new XMLHttpRequest();
     xhr.responseType = "json"
     xhr.onload = () => {

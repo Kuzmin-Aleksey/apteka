@@ -74,7 +74,6 @@ func (s *ProductService) filterProductsByBooking(ctx context.Context, storeId in
 		for _, bookProduct := range bookProducts {
 			if bookProduct.CodeSTU == product.CodeSTU {
 				product.Count -= bookProduct.Quantity
-				break
 			}
 		}
 
@@ -87,13 +86,65 @@ func (s *ProductService) filterProductsByBooking(ctx context.Context, storeId in
 	return filtered, nil
 }
 
-func (s *ProductService) FindById(ctx context.Context, storeId int, id int) (*entity.Product, error) {
-	product, err := s.productRepo.FindByCode(ctx, storeId, id)
+func (s *ProductService) FindByIdS(ctx context.Context, storeId int, ids []int) (map[int]entity.Product, error) {
+	var products []entity.Product
+
+	for _, id := range ids {
+		product, err := s.productRepo.FindByCode(ctx, storeId, id)
+		if err != nil {
+			if failure.IsNotFoundError(err) {
+				continue
+			}
+			return nil, err
+		}
+
+		products = append(products, *product)
+	}
+
+	products, err := s.filterProductsByBooking(ctx, storeId, products)
 	if err != nil {
 		return nil, err
 	}
 
-	return product, nil
+	mapProducts := make(map[int]entity.Product)
+	for _, product := range products {
+		mapProducts[product.CodeSTU] = product
+	}
+
+	return mapProducts, nil
+}
+
+func (s *ProductService) CheckInStock(ctx context.Context, storeId int, checkingProducts []CheckInStockProduct) ([]CheckInStockProduct, error) {
+	result := make([]CheckInStockProduct, 0, len(checkingProducts))
+
+	bookProducts, err := s.bookingRepo.GetActiveProductsByStore(ctx, storeId)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, checkingProduct := range checkingProducts {
+		product, err := s.productRepo.FindByCode(ctx, storeId, checkingProduct.CodeSTU)
+		if err != nil {
+			if failure.IsNotFoundError(err) {
+				continue
+			}
+			return nil, err
+		}
+
+		for _, bookProduct := range bookProducts {
+			if product.CodeSTU == bookProduct.CodeSTU {
+				product.Count -= bookProduct.Quantity
+			}
+		}
+
+		checkingProduct.Count = product.Count
+
+		if checkingProduct.Count > 0 {
+			result = append(result, checkingProduct)
+		}
+	}
+
+	return result, nil
 }
 
 func (s *ProductService) UploadProducts(ctx context.Context, products []entity.Product) error {

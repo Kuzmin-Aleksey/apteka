@@ -17,7 +17,7 @@ func (w *Window) createBookingTab(booking models.Booking, onStatusChange func(ne
 	idLabel.Alignment = fyne.TextAlignCenter
 	idLabel.TextStyle.Bold = true
 
-	dateLabel := widget.NewLabel("Дата создания: " + booking.CreatedAt.Format(time.DateTime))
+	dateLabel := widget.NewLabel("Дата создания: " + booking.CreatedAt.In(time.Local).Format(time.DateTime))
 
 	statusLabel := widget.NewLabel("Статус: " + getStatusDisplayName(booking.Status))
 	statusLabel.TextStyle.Bold = true

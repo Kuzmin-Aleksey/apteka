@@ -2,6 +2,7 @@ package httpAPI
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 	"server/internal/domain/service/booking"
 	"server/pkg/failure"
@@ -111,8 +112,14 @@ func (h *Handler) ApiSetBookingDelay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.booking.StoreBookingDelay(time.Duration(delay)); err != nil {
+	if err := h.booking.StoreBookingDelay(time.Duration(delay) * time.Hour); err != nil {
 		h.writeError(w, err)
 		return
 	}
+}
+
+func (h *Handler) ApiGetBookingDelay(w http.ResponseWriter, r *http.Request) {
+	delay := h.booking.GetBookingDelay()
+
+	w.Write([]byte(strconv.Itoa(int(math.Round(delay.Hours())))))
 }

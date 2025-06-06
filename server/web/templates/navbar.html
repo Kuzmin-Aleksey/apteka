@@ -1,0 +1,168 @@
+{{ define "navbar" }}
+    <style>
+        #pharmacyAddress {
+            font-size: 0.8rem;
+            line-height: 1.2;
+            margin-top: 2px;
+        }
+
+        .navbar-brand img {
+            height: 40px;
+            flex-direction: column;
+            align-items: flex-start !important;
+        }
+
+        @media (min-width: 992px) {
+            #mobileMenu {
+                display: none !important;
+            }
+
+            .col-lg-10 {
+                flex: 0 0 auto;
+                width: 75%;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .navbar-brand {
+                max-width: calc(100% - 140px);
+            }
+
+            .navbar-brand img {
+                height: 30px;
+            }
+
+            .bg-primary-dark {
+                background-color: #1d6a4f !important;
+            }
+
+            .navbar-collapse {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                z-index: 1000;
+            }
+
+            .floating-cart-btn {
+                display: block; /* Видна только на мобильных */
+            }
+
+            .navbar .cart-btn {
+                display: none; /* Скрываем кнопку в навбаре на мобильных */
+            }
+
+            .navbar > .container {
+                flex-wrap: nowrap;
+            }
+
+            .d-lg-none .text-white {
+                font-size: 0.8rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 120px;
+            }
+
+            body {
+                padding-bottom: 80px; /* Больше места для кнопки */
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar-toggler {
+                padding: 0.25rem;
+            }
+        }
+    </style>
+
+    <!-- Навигационная панель -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <!-- Левая часть: логотип и адрес -->
+            <div class="d-flex align-items-center">
+                <a class="navbar-brand d-flex align-items-center" href="#">
+                    <img src="/static/img/logo-min-bg-none.png" alt="" class="me-2">
+                    <div>
+                        <span class="d-sm-inline">Лекарства в дорогу</span>
+                        <div class="text-white-50 small" id="pharmacyAddress">ул. Ленина, 10</div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Центральная часть: навигационные ссылки (скрыты на мобильных) -->
+            <div class="d-none d-lg-block">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link main-page-link" href="/">Главная</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link stores-page-link" href="/stores">Аптеки</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link bookings-page-link" href="/bookings">Мои заказы</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link promotions-page-link" href="/promotions">Акции</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Правая часть: корзина и кнопка меню -->
+            <div class="d-flex align-items-center">
+                <!-- Корзина - видна всегда -->
+                <button class="btn btn-outline-light position-relative me-2 me-lg-0" data-bs-toggle="offcanvas"
+                        data-bs-target="#cartOffcanvas">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                          id="cartCount">0</span>
+                </button>
+
+                <!-- Кнопка меню (гамбургер) - только на мобильных -->
+                <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#mobileMenu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Мобильное меню (раскрывается при клике) -->
+        <div class="collapse navbar-collapse bg-primary-dark px-3 d-lg-none" id="mobileMenu">
+            <ul class="navbar-nav">
+                <li class="nav-item border-top">
+                    <a class="nav-link main-page-link" href="#">Главная</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link stores-page-link" href="/stores">Аптеки</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link bookings-page-link" href="/bookings">Мои заказы</a>
+                </li>
+                <li class="nav-item border-bottom">
+                    <a class="nav-link promotions-page-link" href="/promotions">Акции</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <script>
+        function setStoreId() {
+            const storeId = getStoreId();
+            if (storeId !== "") {
+                document.querySelectorAll(".main-page-link").forEach(e => {
+                    e.setAttribute("href", `/?store=${storeId}`);
+                })
+            }
+        }
+
+
+        function setActiveLink(name) {
+            document.querySelectorAll(`.${name}`).forEach(e => {
+                e.classList.add("active")
+            })
+        }
+
+        setStoreId()
+
+    </script>
+
+{{ end }}

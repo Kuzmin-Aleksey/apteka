@@ -388,10 +388,7 @@
             loadingWs = new WebSocket("ws://" + location.host + "/api/images/load/progress");
 
             loadingWs.onmessage = (event) => {
-                console.log(event.data)
                 let progress = Number(event.data)
-                console.log(progress)
-
 
                 if (progress === 100 || progress === -1) {
                     loadingWs.close(1000)
@@ -409,7 +406,6 @@
             };
 
             loadingWs.onclose = (event) => {
-                console.log("websocket closed")
                 stopAutoLoading();
             };
 

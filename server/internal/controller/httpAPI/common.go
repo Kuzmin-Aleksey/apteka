@@ -21,9 +21,13 @@ func (h *Handler) HandleMainPage(w http.ResponseWriter, r *http.Request) {
 	}
 	h.l.Println(storeId)
 
-	h.handleTemplate("web/templates/main_page.html")(w, r)
+	h.handleTemplate("web/templates/main_page.html", "web/templates/navbar.html")(w, r)
+}
+
+func (h *Handler) HandleBookingsPage(w http.ResponseWriter, r *http.Request) {
+	h.handleTemplate("web/templates/bookings.html", "web/templates/navbar.html")(w, r)
 }
 
 func (h *Handler) HandleStoresPage(w http.ResponseWriter, r *http.Request) {
-	h.handleTemplate("web/templates/stores_page.html")(w, r)
+	h.handleTemplate("web/templates/stores_page.html", "web/templates/navbar.html")(w, r)
 }

@@ -1,6 +1,7 @@
 
-const StatusOk = 200
-const StatusUnauthorized = 401
+const StatusOk = 200;
+const StatusNotFound = 404;
+const StatusUnauthorized = 401;
 
 function FormatTime(tStr) {
     let t = new Date(tStr)
@@ -29,6 +30,48 @@ function withAuthUrl() {
 function deleteTokenFromCookie() {
     deleteCookie("token")
 }
+
+
+function getBookings() {
+    let bookingsCookie = getCookie("bookings")
+    if (bookingsCookie) {
+        let bookings = JSON.parse(bookingsCookie)
+        if (bookings) {
+            return bookings
+        }
+    }
+
+    return []
+}
+
+function addBooking(booking_id) {
+    let oldBookings = getBookings()
+    let bookings = [booking_id]
+
+    bookings.push(...oldBookings)
+    setCookie("bookings", JSON.stringify(bookings), {path: "/"});
+}
+
+function deleteBooking(booking_id) {
+    let bookings = getBookings()
+    bookings = bookings.filter(booking => booking !== booking_id)
+    setCookie("bookings", JSON.stringify(bookings), {path: "/"});
+}
+
+
+function getStoreId() {
+    let storeIdCookie = getCookie("store")
+    if (storeIdCookie) {
+        let storeId = Number.parseInt(storeIdCookie)
+        return storeId ? storeId : ""
+    }
+    return ""
+}
+
+function saveStoreId(storeId) {
+    setCookie("store", storeId, {path: "/"})
+}
+
 
 let show = false
 
@@ -90,4 +133,21 @@ function loadingIndicator() {
 
 function hideModal(modal) {
     modal.querySelector("button[data-bs-dismiss=modal]").click()
+}
+
+
+function getNoun(number, one, two, five) {
+    let n = Math.abs(number);
+    n %= 100;
+    if (n >= 5 && n <= 20) {
+        return five;
+    }
+    n %= 10;
+    if (n === 1) {
+        return one;
+    }
+    if (n >= 2 && n <= 4) {
+        return two;
+    }
+    return five;
 }

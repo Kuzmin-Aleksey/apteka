@@ -256,10 +256,6 @@
             return;
         }
 
-        console.log('Сохранение акции:', {
-            productCode, productName, discount
-        });
-
         let promotion = {
             "product_code": productCode,
             "product_name": productName,
@@ -282,10 +278,8 @@
         }
 
         if (currentPromotions[productCode]) {
-            console.log("update")
             xhr.open("POST", `/api/promotion/update`)
         } else {
-            console.log("create")
             xhr.open("POST", `/api/promotion/new`)
         }
 

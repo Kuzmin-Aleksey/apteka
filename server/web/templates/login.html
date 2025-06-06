@@ -87,7 +87,6 @@
 <script>
     OnUnauthorized = function(msg) {
         console.error(msg)
-        alert("неверный логин или пароль")
     }
 
     OnError = function(code, err) {
@@ -110,10 +109,9 @@
         const data = new FormData(form)
         let login = data.get("login")
         let password = data.get("pass")
-        console.log(login, password)
 
         if (login === "" || password === "") {
-            console.log("empty fields")
+            console.error("empty fields")
             return
         }
 

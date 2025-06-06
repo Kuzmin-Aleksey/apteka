@@ -27,7 +27,7 @@ func (c *TokenCacheAdapter) Check(ctx context.Context, token string) (bool, erro
 	if err := ttl.Err(); err != nil {
 		return false, failure.NewInternalError("check token error: " + err.Error())
 	}
-	return ttl.Val() != 0, nil
+	return ttl.Val() > 0, nil
 }
 
 func (c *TokenCacheAdapter) Del(ctx context.Context, token string) error {

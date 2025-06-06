@@ -96,6 +96,7 @@ func (h *Handler) init() error {
 
 	h.router.HandleFunc("/", h.HandleMainPage).Methods(get)
 	h.router.HandleFunc("/stores", h.HandleStoresPage).Methods(get)
+	h.router.HandleFunc("/bookings", h.HandleBookingsPage).Methods(get)
 
 	adminPagesHandler, err := NewAdminPagesHandler(h)
 	if err != nil {
@@ -121,6 +122,7 @@ func (h *Handler) apiHandler() *mux.Router {
 	router.HandleFunc("/auth/logout", h.ApiHandleLogout).Methods(post)
 
 	router.HandleFunc("/products/search", h.ApiHandleSearchProducts).Methods(get)
+	router.HandleFunc("/products/check-in-stock", h.ApiHandleCheckProductsInStock).Methods(post)
 	router.HandleFunc("/products/upload", h.MwWithApiKey(h.ApiHandleUploadProducts)).Methods(post)
 
 	router.HandleFunc("/promotion/get", h.ApiHandleGetPromotion).Methods(get)
@@ -150,6 +152,7 @@ func (h *Handler) apiHandler() *mux.Router {
 	router.HandleFunc("/booking/by-store", h.MwWithApiKey(h.ApiGetStoreBookings)).Methods(get)
 	router.HandleFunc("/booking/delete", h.MwWithApiKey(h.ApiDeleteBooking)).Methods(post)
 	router.HandleFunc("/booking/set-delay", h.MwAuth(h.ApiSetBookingDelay)).Methods(post)
+	router.HandleFunc("/booking/get-delay", h.ApiGetBookingDelay).Methods(get)
 
 	router.Use(
 		h.MwNoCache,

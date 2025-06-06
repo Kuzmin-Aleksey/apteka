@@ -24,7 +24,7 @@ func (r *BookingRepo) Save(ctx context.Context, book *entity.Book) error {
 		return failure.NewInternalError(err.Error())
 	}
 
-	res, err := r.ExecContext(ctx, "INSERT INTO booking (store_id, created_at, status, username, phone, message) VALUES (?, ?, ?, ?, ?, ?)",
+	res, err := tx.ExecContext(ctx, "INSERT INTO booking (store_id, created_at, status, username, phone, message) VALUES (?, ?, ?, ?, ?, ?)",
 		book.StoreId, book.CreatedAt, book.Status, book.Username, book.Phone, book.Message)
 	if err != nil {
 		return failure.NewInternalError(err.Error())
@@ -38,8 +38,8 @@ func (r *BookingRepo) Save(ctx context.Context, book *entity.Book) error {
 	book.Id = int(bookId)
 
 	for _, product := range book.Products {
-		if _, err := r.ExecContext(ctx, "INSERT INTO booking_products (booking_id, code_stu, name, quantity) VALUES (?, ?, ?, ?)",
-			book.Id, product.CodeSTU, product.Name, product.Quantity); err != nil {
+		if _, err := tx.ExecContext(ctx, "INSERT INTO booking_products (booking_id, code_stu, name, quantity, price) VALUES (?, ?, ?, ?, ?)",
+			book.Id, product.CodeSTU, product.Name, product.Quantity, product.Price); err != nil {
 			tx.Rollback()
 			return failure.NewInternalError(err.Error())
 		}
@@ -63,7 +63,7 @@ func (r *BookingRepo) GetById(ctx context.Context, bookId int) (*entity.Book, er
 
 	if err := r.QueryRowContext(ctx, "SELECT * FROM booking WHERE id=?", bookId).Scan(&book.Id, &book.StoreId, &book.CreatedAt, &book.Status, &book.Username, &book.Phone, &book.Message); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
+			return nil, failure.NewNotFoundError(err.Error())
 		}
 	}
 
@@ -109,7 +109,8 @@ func (r *BookingRepo) GetActiveProductsByStore(ctx context.Context, storeId int)
 	const query = `
 	SELECT booking_products.code_stu,
 	       booking_products.name,
-	       booking_products.quantity
+	       booking_products.quantity,
+		   booking_products.price
 	FROM booking_products
 	INNER JOIN booking ON booking.id = booking_products.booking_id
 	WHERE booking.store_id=? AND
@@ -130,7 +131,7 @@ func (r *BookingRepo) GetActiveProductsByStore(ctx context.Context, storeId int)
 	for rows.Next() {
 		var product entity.BookProduct
 
-		if err := rows.Scan(&product.CodeSTU, &product.Name, &product.Quantity); err != nil {
+		if err := rows.Scan(&product.CodeSTU, &product.Name, &product.Quantity, &product.Price); err != nil {
 			return nil, failure.NewInternalError(err.Error())
 		}
 		products = append(products, product)
@@ -142,7 +143,7 @@ func (r *BookingRepo) GetActiveProductsByStore(ctx context.Context, storeId int)
 func (r *BookingRepo) getBookingProducts(ctx context.Context, bookId int) ([]entity.BookProduct, error) {
 	products := make([]entity.BookProduct, 0, 1) // not nil
 
-	rows, err := r.QueryContext(ctx, "SELECT code_stu, name, quantity FROM booking_products WHERE booking_id=?", bookId)
+	rows, err := r.QueryContext(ctx, "SELECT code_stu, name, quantity, price FROM booking_products WHERE booking_id=?", bookId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return products, nil
@@ -154,7 +155,7 @@ func (r *BookingRepo) getBookingProducts(ctx context.Context, bookId int) ([]ent
 	for rows.Next() {
 		var product entity.BookProduct
 
-		if err := rows.Scan(&product.CodeSTU, &product.Name, &product.Quantity); err != nil {
+		if err := rows.Scan(&product.CodeSTU, &product.Name, &product.Quantity, &product.Price); err != nil {
 			return nil, failure.NewInternalError(err.Error())
 		}
 		products = append(products, product)

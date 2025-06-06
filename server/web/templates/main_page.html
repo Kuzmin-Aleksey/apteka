@@ -6,6 +6,7 @@
     <title>Лекарства в дорогу - аптека с быстрой доставкой</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/static/js/cookie.js"></script>
     <script src="/static/js/util.js"></script>
     <style>
         :root {
@@ -16,10 +17,23 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-bottom: 70px; /* Для плавающей кнопки */
+        }
+
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type=number] {
+            -moz-appearance: textfield; /* Firefox */
         }
 
         .navbar-brand img {
             height: 40px;
+            flex-direction: column;
+            align-items: flex-start!important;
         }
 
         .pharmacy-card {
@@ -38,6 +52,7 @@
             overflow: hidden;
             transition: all 0.3s;
             height: 100%;
+            cursor: pointer;
         }
 
         .product-card:hover {
@@ -87,15 +102,15 @@
 
         .search-box .btn {
             position: absolute;
-            right: 5px;
-            top: 5px;
+            right: 0;
+            top: 0;
         }
 
         .out-of-stock {
             opacity: 0.6;
             position: relative;
         }
-/*
+
         .out-of-stock::after {
             content: "Нет в наличии";
             position: absolute;
@@ -108,7 +123,7 @@
             border-radius: 20px;
             font-size: 0.8rem;
         }
-*/
+
         .quantity-control {
             display: flex;
             align-items: center;
@@ -128,54 +143,149 @@
             text-align: center;
             margin: 0 5px;
         }
+
+        .cart-item-img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .quantity-control button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: none;
+        }
+
+        .quantity-control input {
+            width: 40px;
+            text-align: center;
+        }
+
+        #cartItems .list-group-item {
+            border-radius: 0;
+            border-left: 0;
+            border-right: 0;
+        }
+
+        .offcanvas-body .sticky-bottom {
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+
+        /* Пагинация */
+        #paginationContainer .page-item.active .page-link {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        #paginationContainer .page-link {
+            color: var(--primary-color);
+        }
+
+        #paginationContainer .page-link:hover {
+            color: #1a6049;
+        }
+
+        #searchResultsTitle {
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        /* Стили для статусов заказа */
+        #orderStatusIcon i {
+            transition: all 0.5s ease;
+        }
+
+        #orderStatusTitle {
+            transition: all 0.3s ease;
+        }
+
+        .progress-bar {
+            transition: width 0.8s ease-in-out;
+        }
+
+        .list-group-item {
+            padding: 0.75rem 0;
+            border-color: rgba(0,0,0,0.05);
+        }
+
+        /* Плавающая кнопка корзины для мобильных */
+        .floating-cart-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: none; /* По умолчанию скрыта */
+        }
+
+        .floating-cart-btn .btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .floating-cart-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+        }
+
+        @media (min-width: 992px) {
+            .col-lg-10 {
+                flex: 0 0 auto;
+                width: 75%;
+            }
+        }
+
+        @media (max-width: 992px) {
+
+            .navbar-brand img {
+                height: 30px;
+            }
+
+            .floating-cart-btn {
+                display: block; /* Видна только на мобильных */
+            }
+
+
+            .d-lg-none .text-white {
+                font-size: 0.8rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 120px;
+            }
+
+            body {
+                padding-bottom: 80px; /* Больше места для кнопки */
+            }
+        }
+
     </style>
 </head>
 <body>
-<!-- Навигационная панель -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
-        <a class="navbar-brand d-flex align-items-center" href="#">
-            <img src="https://via.placeholder.com/150x50?text=Лекарства+в+дорогу" alt="" class="me-2">
-            <span class="d-none d-sm-inline">Лекарства в дорогу</span>
-        </a>
 
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+{{template "navbar" .}}
 
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link active" href="#">Главная</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/stores">Аптеки</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Акции</a>
-                </li>
-            </ul>
-
-            <div class="d-flex">
-                <button class="btn btn-outline-light position-relative" data-bs-toggle="offcanvas"
-                        data-bs-target="#cartOffcanvas">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                          id="cartCount">0</span>
-                </button>
-            </div>
-        </div>
-    </div>
-</nav>
 
 <!-- Основное содержимое -->
 <div class="container my-4">
     <div class="row">
-        <!-- Блок выбора аптеки -->
-
-
         <!-- Блок поиска и товаров -->
-        <div class="col-lg-8">
+        <div class="col-lg-10 m-auto">
             <!-- Блок поиска -->
             <div class="search-box mb-4">
                 <input type="text" class="form-control pe-5" id="searchInput" placeholder="Поиск лекарств и товаров...">
@@ -249,11 +359,7 @@
                                         <p id="productModalGTIN">Не указано</p>
                                     </div>
                                     <div class="quantity-control d-flex align-items-center mb-3">
-                                        <label class="me-2">Количество:</label>
-                                        <button class="btn btn-outline-secondary decrease-qty">-</button>
-                                        <input type="number" min="1" value="1" class="form-control mx-2 item-qty"
-                                               style="width: 60px;">
-                                        <button class="btn btn-outline-secondary increase-qty">+</button>
+                                        <p>Количество: <span id="productModalQuantity"></span></p>
                                     </div>
                                 </div>
                             </div>
@@ -277,48 +383,84 @@
     </div>
 </div>
 
+<!-- Плавающая кнопка корзины для мобильных -->
+<div class="floating-cart-btn">
+    <button class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
+        <i class="fas fa-shopping-cart fa-lg"></i>
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger floating-cart-badge" id="floatingCartCount">0</span>
+    </button>
+</div>
+
 <!-- Оффканвас корзины -->
 <div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas">
-    <div class="offcanvas-header">
+    <div class="offcanvas-header border-bottom">
         <h5 class="offcanvas-title">Ваша корзина</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
-    <div class="offcanvas-body">
-        <div class="list-group mb-3" id="cartItems">
+    <div class="offcanvas-body p-0">
+        <div class="list-group list-group-flush" id="cartItems">
             <!-- Товары в корзине будут здесь -->
-            <div class="list-group-item">
-                <div class="d-flex align-items-center">
-                    <img src="https://via.placeholder.com/100?text=Товар" class="cart-item-img me-3" alt="Товар">
-                    <div class="flex-grow-1">
-                        <h6 class="mb-1">Название товара</h6>
-                        <small class="text-muted">1200 ₽ за шт.</small>
-                    </div>
-                    <div class="quantity-control">
-                        <button class="btn btn-sm btn-outline-secondary decrease-qty">-</button>
-                        <input type="number" min="1" value="1" class="form-control form-control-sm item-qty">
-                        <button class="btn btn-sm btn-outline-secondary increase-qty">+</button>
-                    </div>
-                    <div class="fw-bold ms-3 item-total">1200 ₽</div>
-                    <button class="btn btn-sm btn-outline-danger ms-2 remove-item">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
+        </div>
+
+        <div class="sticky-bottom bg-white border-top p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Итого:</h5>
+                <h5 class="text-primary mb-0" id="cartTotal">0 ₽</h5>
             </div>
+            <div id="disable-booking-alert" class="d-none alert alert-light border small mb-0">
+                <i class="fas fa-info-circle me-2"></i>
+                Извините, на данный момент бронирование не доступно.
+            </div>
+            <button class="btn btn-primary w-100 mb-2" id="checkoutBtn">
+                <i class="fas fa-shopping-bag me-2"></i>Оформить заказ
+            </button>
+            <button class="btn btn-outline-secondary w-100" id="clearCartBtn">
+                <i class="fas fa-trash-alt me-2"></i>Очистить корзину
+            </button>
         </div>
-
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5>Итого:</h5>
-            <h5 class="text-primary" id="cartTotal">0 ₽</h5>
-        </div>
-
-        <button class="btn btn-primary w-100 mb-2" id="checkoutBtn">
-            <i class="fas fa-shopping-bag me-2"></i>Оформить заказ
-        </button>
-        <button class="btn btn-outline-secondary w-100" id="clearCartBtn">
-            <i class="fas fa-trash-alt me-2"></i>Очистить корзину
-        </button>
     </div>
 </div>
+
+<!-- Модальное окно оформления заказа -->
+<div class="modal fade" id="checkoutModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title">Оформление бронирования</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="orderForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Ваше имя</label>
+                        <input name="username" type="text" class="form-control" required placeholder="Иван Иванов">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Телефон</label>
+                        <input name="phone" type="tel" class="form-control" required placeholder="+7 (900) 123-45-67">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Комментарий к заказу</label>
+                        <textarea name="message" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="alert alert-light border small mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        После оформления заказа товары будут забронированы в выбранной аптеке на <span id="booking-delay">24 часа</span>.
+                        Статус бронирования можно отслеживать во вкладке "Мои заказы".
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button id="booking-btn" type="submit" class="btn btn-primary">Забронировать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 
 <!-- Подвал -->
 <footer class="bg-dark text-white py-4 mt-4">
@@ -337,7 +479,7 @@
             </div>
             <div class="col-md-4">
                 <h5>Режим работы</h5>
-                <p>Круглосуточно, без выходных</p>
+                <p id="schedule">Не указан</p>
             </div>
         </div>
     </div>
@@ -346,9 +488,16 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const params = new URLSearchParams(location.search);
-    const storeId = params.get("store");
+    const storeId = Number.parseInt(params.get("store"));
+    let storeInfo = {};
     let products = [];
     let promotions = [];
+    let promoProducts = {};
+    let cartCount = 0;
+    let cartItems = [];
+
+    saveStoreId(storeId);
+    setActiveLink("main-page-link");
 
     function CheckCode(xhr) {
         if (xhr.status === StatusOk) {
@@ -358,11 +507,287 @@
         return false
     }
 
-    function processProducts() {
-        document.querySelectorAll("img.product-img").forEach(el => {
+    // Получение информации об аптеке
+    function getStoreInfo() {
+        let xhr = new XMLHttpRequest();
+
+        xhr.responseType = "json"
+        xhr.onload = () => {
+            if (!CheckCode(xhr)) {
+                return;
+            }
+
+            xhr.response.forEach(s => {
+                if (s.id === storeId) {
+                    storeInfo = s;
+                }
+            })
+            if (storeInfo === {}) {
+                alert("Аптека не найдена");
+                location.replace("/");
+            }
+
+
+            if (!storeInfo.booking_enable) {
+                document.getElementById("disable-booking-alert").classList.remove("d-none");
+                document.getElementById("checkoutBtn").setAttribute("disabled", "");
+                document.getElementById("booking-btn").setAttribute("disabled", "");
+            }
+            if (storeInfo.schedule) {
+                document.getElementById("schedule").innerText = storeInfo.schedule;
+            }
+        }
+        xhr.open("GET", `/api/stores/get`);
+        xhr.send();
+    }
+
+
+    // Получение времени бронирования
+    function getBookingDelay() {
+        xhr = new XMLHttpRequest();
+
+        xhr.onload = () => {
+            if (!CheckCode(xhr)) {
+                return;
+            }
+
+            document.getElementById("booking-delay").innerText = xhr.response + " " + getNoun(xhr.response, "час", "часа", "часов")
+
+        }
+        xhr.open("GET", `/api/booking/get-delay`);
+        xhr.send();
+    }
+    getBookingDelay()
+
+
+
+
+    // Обновление счетчика корзины
+    function updateCartCount(count) {
+        cartCount = count;
+        document.getElementById('cartCount').textContent = count;
+        document.getElementById('floatingCartCount').textContent = count;
+    }
+
+
+    // Добавление товара в корзину
+    function addToCart(product, quantity) {
+        // Проверяем, есть ли уже товар в корзине
+        const existingItemIndex = cartItems.findIndex(item => item.id === product.id);
+
+        if (existingItemIndex !== -1) {
+            // Обновляем количество
+
+            if (cartItems[existingItemIndex].quantity < cartItems[existingItemIndex].max_quantity) {
+                cartItems[existingItemIndex].quantity += quantity;
+            }
+        } else {
+            // Добавляем новый товар
+            cartItems.push({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                quantity: quantity,
+                max_quantity: product.count,
+            });
+        }
+
+        // Обновляем счетчик
+        updateCartCount(cartItems.reduce((sum, item) => sum + item.quantity, 0));
+
+        // Показываем уведомление
+        //showNotification(`Добавлено в корзину: ${product.name} (${quantity} шт.)`);
+
+        // Обновляем корзину
+        renderCart();
+    }
+
+
+    function renderCart() {
+        let cartItemsHtml = "";
+        let cartTotal = 0;
+
+        cartItems.forEach((product) => {
+            let discount = 0;
+
+            const promotion = promotions.find(p => p.product_code === product.id);
+            if (promotion) {
+                discount = promotion.discount;
+            }
+
+            let totalPrice = ((product.price/100) - discount) * product.quantity
+            cartTotal += totalPrice
+
+            cartItemsHtml += `
+             <div class="list-group-item py-3">
+                <div class="d-flex gap-3">
+                    <div class="flex-shrink-0">
+                        <img src="/image/${product.id}.webp" class="rounded"
+                             style="width: 60px; height: 60px; object-fit: contain;" alt="">
+                    </div>
+                    <div class="flex-grow-1 d-flex flex-column">
+                        <div class="mb-1">
+                            <h6 class="mb-0 text-truncate-2" style="
+                                display: -webkit-box;
+                                -webkit-line-clamp: 2;
+                                -webkit-box-orient: vertical;
+                                overflow: hidden;
+                                line-height: 1.3;
+                            ">${product.name}</h6>
+                            <div class="d-flex align-items-center justify-content-between mt-1">
+                                <span class="text-muted small">${(product.price/100) - discount} ₽ × ${product.quantity}</span>
+                                <span class="fw-bold">${totalPrice} ₽</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <div class="quantity-control">
+                                <button class="btn btn-sm btn-outline-secondary decrease-qty p-1" style="width: 28px; height: 28px;" data-id="${product.id}">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <input id="item-qty-input-${product.id}" type="number" min="1" value="${product.quantity}"
+                                       class="form-control form-control-sm item-qty text-center"
+                                       style="width: 40px; height: 28px;">
+                                <button class="btn btn-sm btn-outline-secondary increase-qty p-1" style="width: 28px; height: 28px;" data-id="${product.id}">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger remove-item" data-id="${product.id}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            `
+        });
+
+        const cartTotalEl = document.getElementById("cartTotal");
+        cartTotalEl.innerText = `${cartTotal} ₽`
+
+        const cartItemsEL = document.getElementById("cartItems");
+        cartItemsEL.innerHTML = cartItemsHtml;
+
+        if (cartItems.length === 0) {
+            document.getElementById("checkoutBtn").setAttribute("disabled", "");
+            document.getElementById("booking-btn").setAttribute("disabled", "");
+        } else if (storeInfo.booking_enable) {
+            document.getElementById("checkoutBtn").removeAttribute("disabled");
+            document.getElementById("booking-btn").removeAttribute("disabled");
+        }
+
+
+        // add event listeners
+
+        document.querySelectorAll(".remove-item").forEach(btn => {
+            btn.addEventListener('click', e => {
+                const productId = btn.dataset.id;
+                cartItems = cartItems.filter(prod => {
+                    if (prod.id == productId) {
+                        updateCartCount(cartCount-prod.quantity);
+                        return false
+                    }
+                    return true
+                })
+
+                renderCart();
+            })
+        })
+
+        document.querySelectorAll(".decrease-qty").forEach(btn => {
+            btn.addEventListener('click', e => {
+                const productId = btn.dataset.id;
+
+                for (let i=0; i < cartItems.length; i++) {
+                    if (cartItems[i].quantity > 1 && cartItems[i].id == productId) {
+                        cartItems[i].quantity--
+                        updateCartCount(cartCount-1);
+                        renderCart();
+                        break;
+                    }
+                }
+            })
+        })
+
+        document.querySelectorAll(".increase-qty").forEach(btn => {
+            btn.addEventListener('click', e => {
+                const productId = btn.dataset.id;
+
+                for (let i=0; i < cartItems.length; i++) {
+                    if (cartItems[i].quantity < cartItems[i].max_quantity && cartItems[i].id == productId) {
+                        cartItems[i].quantity++
+                        updateCartCount(cartCount+1);
+                        renderCart();
+                        break;
+                    }
+                }
+            })
+        })
+
+        saveCart();
+    }
+
+    function saveCart() {
+        let exp = new Date();
+        exp.setMonth(exp.getMonth()+1);
+        setCookie("cart", JSON.stringify(cartItems), {path: "/", expires: exp});
+    }
+
+    function readCart() {
+        let cartCookie = getCookie("cart");
+
+        if (cartCookie) {
+            let cart = JSON.parse(cartCookie)
+            if (cart) {
+                cartItems = cart;
+                updateCartCount(cartItems.reduce((sum, item) => sum + item.quantity, 0));
+            }
+        }
+
+        checkCartInStock()
+
+        renderCart();
+    }
+
+    // Показать уведомление
+    function showNotification(message) {
+        // Создаем элемент уведомления
+        const notification = document.createElement('div');
+        notification.className = 'position-fixed bottom-0 end-0 p-3';
+        notification.style.zIndex = '1100';
+
+        const toast = document.createElement('div');
+        toast.className = 'toast show';
+        toast.role = 'alert';
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+
+        toast.innerHTML = `
+                <div class="toast-header bg-success text-white">
+                    <strong class="me-auto"><i class="fas fa-check-circle me-2"></i>Успешно</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                </div>
+                <div class="toast-body">${message}</div>
+            `;
+
+        notification.appendChild(toast);
+        document.body.appendChild(notification);
+
+        // Автоматическое скрытие через 2 секунды
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 500);
+        }, 2000);
+    }
+
+    function addAltImage(selector) {
+        document.querySelectorAll(selector).forEach(el => {
             el.addEventListener("error", function () {
-                el.setAttribute("src", "https://xn--90agcbozdwe4a.xn--p1ai/wp-content/uploads/2019/01/no_product.png")
-                el.addEventListener("error", function (){})
+                el.setAttribute("src", "/static/img/no_product.webp")
+                el.removeEventListener("error")
             })
         })
     }
@@ -425,10 +850,11 @@
               <div class="fw-bold text-primary">${(product.price/100) - promotion.discount} ₽</div>` :
                 `<div class="fw-bold">${product.price/100} ₽</div>`}
             </div>
-            <button class="btn btn-sm ${product.count <= 0 ? 'btn-outline-secondary disabled' : 'btn-outline-primary'}"
-                    ${product.count <= 0 ? 'disabled' : ''}>
-              ${product.count <= 0 ? 'Нет в наличии' : 'В корзину'}
-            </button>
+            ${product.count <= 0 ?
+                '<span class="badge bg-danger">Нет в наличии</span>' :
+                `<button class="btn btn-sm btn-outline-primary add-to-cart-btn" data-id="${product.id}">
+                  В корзину</button>`
+            }
           </div>
         </div>
       </div>
@@ -437,7 +863,7 @@
             resultsContainer.appendChild(productCard);
         });
 
-        processProducts();
+        addAltImage("img.product-img");
 
         // Генерируем пагинацию
         if (totalPages > 1) {
@@ -474,6 +900,27 @@
 
         // Прокручиваем к началу результатов
         searchResults.scrollIntoView({ behavior: 'smooth' });
+
+
+        // Добавляем обработчики событий
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('add-to-cart-btn')) {
+                    const productId = card.dataset.id;
+                    const product = products.find(p => p.id == productId);
+                    if (product) showProductDetails(product);
+                }
+            });
+        });
+
+        document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const productId = btn.dataset.id;
+                const product = products.find(p => p.id == productId);
+                if (product) addToCart(product, 1);
+            });
+        });
     }
 
     // Обработчик кликов по пагинации
@@ -494,7 +941,11 @@
 
     // Функция для показа детальной информации о товаре
     function showProductDetails(productId) {
-        const product = products.find(p => p.id === productId);
+        let product = products.find(p => p.id === productId);
+        if (!product) {
+            product = promoProducts[productId];
+        }
+
         const promotion = promotions.find(p => p.product_code === productId);
         const modal = new bootstrap.Modal(document.getElementById('productModal'));
         console.log(product)
@@ -507,7 +958,7 @@
         document.getElementById('productModalProducer').textContent = product.producer || 'Не указано';
         document.getElementById('productModalCountry').textContent = product.country || 'Не указано';
         document.getElementById('productModalGTIN').textContent = product.gtin || 'Не указано';
-
+        document.getElementById('productModalQuantity').textContent = product.count;
         if (promotion) {
             document.getElementById('productModalPrice').textContent = `${(product.price/100) - promotion.discount} ₽`;
             document.getElementById('productModalOldPrice').innerHTML = `<del>${product.price/100} ₽</del>`;
@@ -527,9 +978,79 @@
             document.getElementById('addToCartFromModal').disabled = false;
         }
 
+        document.getElementById("addToCartFromModal").addEventListener("click", (btn) => {
+            addToCart(product, 1)
+        })
+
         // Показываем модальное окно
         modal.show();
-        console.log("show modal")
+    }
+
+
+    function checkCartInStock(callback) {
+        if (!callback) {
+            callback = () => {}
+        }
+
+        let checkingProducts = []
+
+        cartItems.forEach(prod => {
+            checkingProducts.push({
+                "id": prod.id,
+                "count": prod.quantity
+            })
+        })
+
+        xhr = new XMLHttpRequest();
+
+        xhr.responseType = "json";
+        xhr.onload = () => {
+            if (!CheckCode(xhr)) {
+                return
+            }
+
+            let result = xhr.response? xhr.response : [];
+
+            if (result === checkingProducts) {
+                callback();
+                return;
+            }
+
+            let mapResult = {}
+            result.forEach(el => mapResult[el.id] = el.count);
+
+
+            let cartInStock = true;
+
+            let resultCart = [];
+            cartItems.forEach(item => {
+                let resultCount = mapResult[item.id];
+                if (resultCount) {
+                    if (resultCount < item.quantity) {
+                        item.quantity = resultCount
+                        cartInStock = false;
+                    }
+                    if (resultCount > item.max_quantity) {
+                        item.max_quantity = resultCount
+                    }
+                    resultCart.push(item);
+                    return
+                }
+                cartInStock = false;
+            })
+            cartItems = resultCart;
+
+            renderCart();
+
+            if (cartInStock) {
+                callback();
+            } else {
+                alert("Некоторых товаров в корзине нет в наличии");
+            }
+        }
+
+        xhr.open("POST", `/api/products/check-in-stock?store_id=${storeId}`);
+        xhr.send(JSON.stringify(checkingProducts));
     }
 
 
@@ -537,10 +1058,21 @@
     document.addEventListener('DOMContentLoaded', function () {
         const promotionsContainer = document.getElementById("promotionsContainer");
         const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('searchInput');
+        const clearCartBtn = document.getElementById('clearCartBtn');
+
+
+        // Очистка корзины
+        clearCartBtn.addEventListener("click", function () {
+            cartItems = [];
+            cartCount = 0;
+            renderCart();
+            updateCartCount(0);
+        })
 
         // Обработчик поиска
         searchBtn.addEventListener('click', function() {
-            const searchTerm = document.getElementById('searchInput').value.trim();
+            const searchTerm = searchInput.value.trim();
 
             let xhr = new XMLHttpRequest();
 
@@ -560,11 +1092,71 @@
         });
 
         // Можно добавить поиск при нажатии Enter
-        searchBtn.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchBtn.click();
-            }
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.code === 'Enter') searchBtn.click();
         });
+
+        // Оформление заказа
+        document.getElementById('checkoutBtn').addEventListener('click', function() {
+            checkCartInStock(() => {
+                const checkoutModal = new bootstrap.Modal(document.getElementById('checkoutModal'));
+                checkoutModal.show();
+            })
+        });
+
+        // Обработка оформления заказа
+        document.getElementById('orderForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+
+            let request = {
+                "username": formData.get("username"),
+                "phone": formData.get("phone"),
+                "message": formData.get("message"),
+                "products": []
+            }
+            let checkingProducts = []
+
+            cartItems.forEach(prod => {
+                request.products.push({
+                    "code_stu": prod.id,
+                    "name": prod.name,
+                    "quantity": prod.quantity
+                })
+                checkingProducts.push({
+                    "id": prod.id,
+                    "count": prod.quantity
+                })
+            })
+
+            // Закрываем окно оформления
+            const checkoutModal = bootstrap.Modal.getInstance(document.getElementById('checkoutModal'));
+            checkoutModal.hide();
+
+            let xhr = new XMLHttpRequest();
+
+            loadingIndicator();
+
+            xhr.responseType = "json"
+            xhr.onload = () => {
+                loadingIndicator();
+                if (!CheckCode(xhr)) {
+                    return
+                }
+
+                let booking_id = xhr.response["book_id"];
+
+                addBooking(booking_id)
+
+                clearCartBtn.click();
+                location.replace("/bookings");
+            }
+
+            xhr.open("POST", `/api/booking/create?store_id=${storeId}`);
+            xhr.send(JSON.stringify(request));
+        });
+
 
 
         function LoadPromotion() {
@@ -577,30 +1169,32 @@
                 }
 
                 promotions = xhr.response;
+                readCart();
 
                 let promotionsHtml = ''
 
                 for (let promo of promotions) {
-                    console.log(promo)
                     if (promo.in_stock) {
                         promotionsHtml += `
                     <div class="col">
-                    <div class="card product-card">
+                    <div class="card product-card" onclick="showProductDetails(${promo.product_code})">
                         <div class="promotion-badge badge bg-danger">Акция</div>
                         <img src="/image/${promo.product_code}.webp" class="card-img-top product-img">
                         <div class="card-body">
                             <h5 class="card-title">${promo.product_name}</h5>
-                            <p class="card-text text-muted small">Производитель: Страна</p>
+                            <p class="card-text text-muted small">${promo.product.producer}</p>
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <span class="old-price">${promo.price_without_discount / 100} ₽</span>
-                                    <div class="fw-bold text-primary">${(promo.price_without_discount - promo.discount * 100) / 100} ₽</div>
+                                    <span class="old-price">${promo.product.price / 100} ₽</span>
+                                    <div class="fw-bold text-primary">${(promo.product.price - promo.discount * 100) / 100} ₽</div>
                                 </div>
-                                <button class="btn btn-sm btn-outline-primary">В корзину</button>
+                                <button class="btn btn-sm btn-outline-primary add-promo-to-cart-btn" data-id="${promo.product_code}">В корзину</button>
                             </div>
                         </div>
                     </div>
                 </div>`
+
+                        promoProducts[promo.product_code] = promo.product;
                     } else {
                         promotionsHtml += `
                     <div class="col">
@@ -609,7 +1203,7 @@
                         <img src="/image/${promo.product_code}.webp" class="card-img-top product-img">
                         <div class="card-body">
                             <h5 class="card-title">${promo.product_name}</h5>
-                            <p class="card-text text-muted small">Производитель: Страна</p>
+                            <p class="card-text text-muted small"></p>
                             <div class="d-flex justify-content-between align-items-center">
                                 <button class="btn btn-sm btn-outline-secondary" disabled>
                                   Нет в наличии
@@ -623,15 +1217,23 @@
 
                 promotionsContainer.innerHTML = promotionsHtml
 
-                processProducts()
+                addAltImage("img.product-img")
+
+                document.querySelectorAll('.add-promo-to-cart-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const productId = btn.dataset.id;
+                        addToCart(promoProducts[productId], 1);
+                    });
+                });
             }
 
             xhr.open("GET", `/api/promotion/get?store_id=${storeId}`)
             xhr.send()
         }
 
-
-        LoadPromotion()
+        getStoreInfo();
+        LoadPromotion();
     })
 
 

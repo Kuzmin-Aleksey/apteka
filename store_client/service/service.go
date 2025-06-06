@@ -143,12 +143,12 @@ func (s *Service) Ping() error {
 
 var deletingBookings = make(map[int]struct{})
 
-func (s *Service) DeleteBooking(id int) error {
+func (s *Service) deleteBooking(id int) error {
 	deletingBookings[id] = struct{}{}
 	return nil
 }
 
-func (s *Service) deleteBooking(id int) error {
+func (s *Service) DeleteBooking(id int) error {
 	values := urlValues{
 		"book_id": strconv.Itoa(id),
 	}

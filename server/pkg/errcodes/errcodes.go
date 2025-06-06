@@ -13,6 +13,7 @@ const (
 	ErrInvalidRequest         Code = "invalid request"
 	ErrDatabaseError          Code = "database error"
 	ErrUnauthorized           Code = "unauthorized"
+	ErrLocked                 Code = "locked"
 	ErrInvalidLoginOrPassword Code = "invalid login or password"
 	ErrInvalidFile            Code = "invalid file"
 )

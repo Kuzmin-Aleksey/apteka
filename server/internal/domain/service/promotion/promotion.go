@@ -21,7 +21,7 @@ type PromotionRepo interface {
 }
 
 type ProductsRepo interface {
-	FindByCode(ctx context.Context, storeId int, code int) (*entity.Product, error)
+	FindByIdS(ctx context.Context, storeId int, ids []int) (map[int]entity.Product, error)
 }
 
 type Logger interface {
@@ -148,27 +148,26 @@ func (s *PromotionService) GetInStock(ctx context.Context, storeId int) ([]Promo
 	}
 	inStock := make([]PromotionInStock, 0, len(allPromo)/2)
 
+	ids := make([]int, 0, len(allPromo))
+
 	for _, promotion := range allPromo {
-		select {
-		case <-ctx.Done():
-			return nil, failure.NewInternalError("context err: " + ctx.Err().Error())
-		default:
-		}
+		ids = append(ids, promotion.ProductCode)
+	}
+
+	products, err := s.productsRepo.FindByIdS(ctx, storeId, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, promotion := range allPromo {
+		product, ok := products[promotion.ProductCode]
 
 		promotionInStock := PromotionInStock{
 			Promotion: promotion,
-			InStock:   true,
+			InStock:   ok,
 		}
-
-		prod, err := s.productsRepo.FindByCode(ctx, storeId, promotion.ProductCode)
-		if err != nil {
-			if failure.IsNotFoundError(err) {
-				promotionInStock.InStock = false
-			}
-
-			s.l.Printf("Promotion service: failed to find product <%d>: %s", promotion.ProductCode, err)
-		} else {
-			promotionInStock.PriceWithoutDiscount = prod.Price
+		if ok {
+			promotionInStock.Product = &product
 		}
 
 		inStock = append(inStock, promotionInStock)

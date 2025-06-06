@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"golang.org/x/net/context"
 	"io"
+	"math"
 	"os"
 	"server/internal/domain/entity"
 	"server/pkg/failure"
@@ -18,17 +19,35 @@ type BookingRepo interface {
 	Delete(ctx context.Context, bookId int) error
 }
 
+type StoreProvider interface {
+	IsBookingEnable(ctx context.Context, storeId int) (bool, error)
+}
+
+type ProductsProvider interface {
+	FindByIdS(ctx context.Context, storeId int, ids []int) (map[int]entity.Product, error)
+}
+
+type PromotionsProvider interface {
+	GetAll(ctx context.Context) ([]entity.Promotion, error)
+}
+
 type BookingService struct {
 	repo         BookingRepo
+	store        StoreProvider
+	products     ProductsProvider
+	promotions   PromotionsProvider
 	bookingDelay time.Duration
 }
 
 const bookingDelayFilePath = "config/booking-delay.txt"
 const defaultBookingDelay = time.Hour * 4
 
-func NewBookingService(repo BookingRepo) (*BookingService, error) {
+func NewBookingService(repo BookingRepo, store StoreProvider, products ProductsProvider, promotions PromotionsProvider) (*BookingService, error) {
 	s := &BookingService{
-		repo: repo,
+		repo:       repo,
+		products:   products,
+		promotions: promotions,
+		store:      store,
 	}
 
 	f, err := os.OpenFile(bookingDelayFilePath, os.O_RDONLY|os.O_CREATE, os.ModePerm)
@@ -53,10 +72,69 @@ func NewBookingService(repo BookingRepo) (*BookingService, error) {
 }
 
 func (s *BookingService) ToBook(ctx context.Context, storeId int, dto *CreateBookDTO) (int, error) {
+	if len(dto.Products) == 0 {
+		return 0, failure.NewInvalidRequestError("no products provided")
+	}
+
+	// check enable
+	bookingEnabled, err := s.store.IsBookingEnable(ctx, storeId)
+	if err != nil {
+		return 0, err
+	}
+	if !bookingEnabled {
+		return 0, failure.NewLockedError("booking is disabled")
+	}
+	// check in stock, set price
+	ids := make([]int, 0, len(dto.Products))
+
+	for _, p := range dto.Products {
+		ids = append(ids, p.CodeSTU)
+	}
+
+	products, err := s.products.FindByIdS(ctx, storeId, ids)
+	if err != nil {
+		return 0, err
+	}
+
+	resultProducts := make([]entity.BookProduct, 0, len(dto.Products))
+
+	for _, p := range dto.Products {
+		existProduct, ok := products[p.CodeSTU]
+		if !ok {
+			continue
+		}
+		if p.Quantity > existProduct.Count {
+			p.Quantity = existProduct.Count
+		}
+		p.Price = existProduct.Price
+		resultProducts = append(resultProducts, p)
+	}
+
+	if len(resultProducts) == 0 {
+		return 0, failure.NewInvalidRequestError("all products not in stock")
+	}
+
+	dto.Products = resultProducts
+
+	// check promotions
+	promotions, err := s.promotions.GetAll(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	for i, p := range dto.Products {
+		for _, promotion := range promotions {
+			if promotion.ProductCode == p.CodeSTU {
+				dto.Products[i].Price = p.Price - (promotion.Discount * 100)
+			}
+		}
+	}
+
 	book := &entity.Book{
 		StoreId:   storeId,
 		CreatedAt: time.Now(),
 		Status:    entity.BookStatusCreated,
+		Username:  dto.Username,
 		Phone:     dto.Phone,
 		Message:   dto.Message,
 		Products:  dto.Products,
@@ -85,7 +163,7 @@ func (s *BookingService) Get(ctx context.Context, bookId int) (*GetBookingRespon
 
 	return &GetBookingResponseDTO{
 		Book:  *book,
-		Delay: s.bookingDelay,
+		Delay: int(math.Round(s.bookingDelay.Hours())),
 	}, nil
 }
 

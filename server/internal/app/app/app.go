@@ -60,11 +60,11 @@ func Run(cfg *config.Config) {
 	imagesParser := image_parser.NewImagesParser(time.Second * 15)
 
 	productsService := products.NewProductService(productsRepo, storesRepo, bookingRepo)
-	promotionService := promotion.NewPromotionService(promotionRepo, productsRepo, l)
+	promotionService := promotion.NewPromotionService(promotionRepo, productsService, l)
 	imagesService := images.NewImagesService(imagesFS, productsRepo, imagesParser, l)
 	storeService := store.NewStoreService(storesRepo, productsRepo)
 	authService := auth.NewAuthService(cache.NewTokenCacheAdapter(c), cfg.Auth)
-	bookingService, err := booking.NewBookingService(bookingRepo)
+	bookingService, err := booking.NewBookingService(bookingRepo, storesRepo, productsService, promotionRepo)
 	if err != nil {
 		l.Fatal(err)
 	}

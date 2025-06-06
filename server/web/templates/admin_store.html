@@ -1,98 +1,118 @@
 {{ define "admin_main" }}
 
-<script> // set active tab link
-    document.getElementById("tab_link_stores").classList.add("link-secondary")
-</script>
+    <script> // set active tab link
+        document.getElementById("tab_link_stores").classList.add("link-secondary")
+    </script>
 
-<main class="col-md-9 mx-sm-auto col-lg-10 px-md-4 py-4">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Аптеки</h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addStoreModal">
-                <i class="fas fa-plus me-1"></i>Добавить аптеку
-            </button>
-        </div>
-    </div>
-
-    <!-- Карточки аптек -->
-    <div id="store-cards" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-
-
-    </div>
-</main>
-
-
-<div class="modal fade" id="addStoreModal" tabindex="-1" aria-labelledby="addStoreModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="addStoreModalLabel">Добавить новую аптеку</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <main class="col-md-9 mx-sm-auto col-lg-10 px-md-4 py-4">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Аптеки</h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" id="addStoreModalBtn"
+                        data-bs-target="#addStoreModal">
+                    <i class="fas fa-plus me-1"></i>Добавить аптеку
+                </button>
             </div>
-            <div class="modal-body">
+        </div>
+
+        <!-- Карточки аптек -->
+        <div id="store-cards" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+
+
+        </div>
+    </main>
+
+
+    <div class="modal fade" id="addStoreModal" tabindex="-1" aria-labelledby="addStoreModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
                 <form name="add-store-form">
-                    <input name="id" type="number" id="storeId" hidden>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="storeAddress" class="form-label">Адрес</label>
-                            <input name="addr" type="text" class="form-control" id="storeAddress" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="storePhone" class="form-label">Телефон</label>
-                            <input name="mobile" type="tel" class="form-control" id="storePhone" required>
-                        </div>
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="addStoreModalLabel">Добавить новую аптеку</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="storeEmail" class="form-label">Email</label>
-                            <input name="email" type="email" class="form-control" id="storeEmail">
+                    <div class="modal-body">
+                        <input name="id" type="number" id="storeId" hidden>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="storeAddress" class="form-label">Адрес</label>
+                                <input name="addr" type="text" class="form-control" id="storeAddress" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="storePhone" class="form-label">Телефон</label>
+                                <input name="mobile" type="tel" class="form-control" id="storePhone" required>
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <label for="storeLat" class="form-label">Широта</label>
-                            <input name="lat" type="number" step="any" class="form-control" id="storeLat" required>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="storeEmail" class="form-label">Email</label>
+                                <input name="email" type="email" class="form-control" id="storeEmail">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="storeLat" class="form-label">Широта</label>
+                                <input name="lat" type="number" step="any" class="form-control" id="storeLat" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="storeLon" class="form-label">Долгота</label>
+                                <input name="lon" type="number" step="any" class="form-control" id="storeLon" required>
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <label for="storeLon" class="form-label">Долгота</label>
-                            <input name="lon" type="number" step="any" class="form-control" id="storeLon" required>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="storeSchedule" class="form-label">Режим работы</label>
+                                <input name="schedule" type="text" class="form-control" id="storeSchedule">
+                            </div>
+                            <div class="col-md-6">
+                                <br>
+                                <div class="form-check form-switch">
+                                    <input name="bookingDisable" type="checkbox" class="form-control form-check-input"
+                                           id="storeBookingDisable">
+                                    <label for="storeBookingDisable" class="form-label form-check-label">Отключить
+                                        бронирование</label>
+                                </div>
+                            </div>
                         </div>
+                        <div class="mb-3">
+                            <div id="map" style="height: 300px; background-color: #eee;"></div>
+                            <small class="text-muted">Кликните на карте, чтобы установить координаты</small>
+                        </div>
+
+
                     </div>
-                    <div class="mb-3">
-                        <div id="map" style="height: 300px; background-color: #eee;"></div>
-                        <small class="text-muted">Кликните на карте, чтобы установить координаты</small>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary" id="saveBtn">Сохранить</button>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary">Сохранить</button>
-            </div>
+
         </div>
     </div>
-</div>
-<script>
-    let storesMap = {}
+    <script>
+        let storesMap = {}
 
-    const storeCards = document.getElementById("store-cards")
-    const storeModal = new bootstrap.Modal(document.getElementById("addStoreModal"))
+        const storeCards = document.getElementById("store-cards")
+        const storeModal = new bootstrap.Modal(document.getElementById("addStoreModal"))
 
-    function loadStores() {
-        let xhr = new XMLHttpRequest();
-        xhr.responseType = "json";
-        xhr.onload = () => {
-            loadingIndicator()
-            if (!CheckCode(xhr)) {
-                return
-            }
+        function loadStores() {
+            let xhr = new XMLHttpRequest();
+            xhr.responseType = "json";
+            xhr.onload = () => {
+                loadingIndicator()
+                if (!CheckCode(xhr)) {
+                    return
+                }
 
-            storeCards.innerHTML = ""
+                storeCards.innerHTML = ""
 
-            if (xhr.response === null) {
-                return;
-            }
-            let stores = xhr.response;
+                if (xhr.response === null) {
+                    return;
+                }
+                let stores = xhr.response;
 
-            stores.forEach((store) => {
-                let storeCard = `
+                stores.forEach((store) => {
+                    let storeCard = `
                 <div class="col">
                     <div class="card store-card h-100">
                         <div class="card-header bg-primary text-white">
@@ -136,115 +156,126 @@
                 </div>
                 `
 
-                storeCards.innerHTML += storeCard
+                    storeCards.innerHTML += storeCard
 
-                storesMap[store.id] = store
-            })
+                    storesMap[store.id] = store
+                })
 
-            addEditDeleteHandlers()
+                addEditDeleteHandlers()
 
-        }
-        xhr.open("GET", "/api/stores/get");
-        loadingIndicator()
-        xhr.send()
-
-
-    }
-
-    loadStores()
-
-    const form = document.querySelector('form[name="add-store-form"]')
-    form.addEventListener('submit', e => {
-        e.preventDefault()
-
-        const data = new FormData(form)
-        let idVal = data.get("id")
-        let addr = data.get("addr")
-        let mobile = data.get("mobile")
-        let email = data.get("email")
-        let latVal = data.get("lat")
-        let lonVal = data.get("lon")
-
-
-        let store = {
-            address: addr,
-            position: {
-                lat: parseFloat(latVal === ""? 0 : latVal),
-                lon: parseFloat(lonVal === ""? 0 : lonVal),
-            },
-            contacts: {
-                mobile: mobile,
-                email: email,
             }
-        }
-
-        let xhr = new XMLHttpRequest();
-
-        xhr.responseType = "json"
-        xhr.onload = () => {
+            xhr.open("GET", "/api/stores/get");
             loadingIndicator()
-            CheckCode(xhr)
-            storeModal.hide()
-            loadStores()
+            xhr.send()
+
+
         }
 
+        loadStores()
 
-        if (idVal) {
-            store.id = Number(idVal)
-            xhr.open("POST", "/api/stores/update");
-        } else {
-            xhr.open("POST", "/api/stores/create");
-        }
+        const form = document.querySelector('form[name="add-store-form"]')
+        form.addEventListener('submit', e => {
+            e.preventDefault()
 
-        withAuth(xhr);
-        loadingIndicator();
-        xhr.send(JSON.stringify(store));
+            const data = new FormData(form)
+            let idVal = data.get("id")
+            let addr = data.get("addr")
+            let mobile = data.get("mobile")
+            let email = data.get("email")
+            let latVal = data.get("lat")
+            let lonVal = data.get("lon")
+            let schedule = data.get("schedule")
+            let bookingDisableVal = data.get("bookingDisable")
 
 
-    })
+            let store = {
+                address: addr,
+                position: {
+                    lat: parseFloat(latVal === "" ? 0 : latVal),
+                    lon: parseFloat(lonVal === "" ? 0 : lonVal),
+                },
+                contacts: {
+                    mobile: mobile,
+                    email: email,
+                },
+                schedule: schedule,
+                booking_enable: !bookingDisableVal
+            }
+
+            let xhr = new XMLHttpRequest();
+
+            xhr.responseType = "json"
+            xhr.onload = () => {
+                loadingIndicator()
+                CheckCode(xhr)
+                storeModal.hide()
+                loadStores()
+            }
 
 
-    function addEditDeleteHandlers() {
-        document.querySelectorAll(".edit-btn").forEach((btn) => {
-            btn.addEventListener("click", () => {
-                let store = storesMap[Number(btn.getAttribute("data-store-id"))]
+            if (idVal) {
+                store.id = Number(idVal)
+                xhr.open("POST", "/api/stores/update");
+            } else {
+                xhr.open("POST", "/api/stores/create");
+            }
 
-                document.getElementById("storeId").value = store.id;
-                document.getElementById("storeAddress").value = store.address;
-                document.getElementById("storePhone").value = store.contacts.mobile;
-                document.getElementById("storeEmail").value = store.contacts.email;
-                document.getElementById("storeLat").value = store.position.lat;
-                document.getElementById("storeLon").value = store.position.lon;
+            withAuth(xhr);
+            loadingIndicator();
+            xhr.send(JSON.stringify(store));
 
-                storeModal.show()
-            })
+
         })
-        document.querySelectorAll(".delete-btn").forEach((btn) => {
-            btn.addEventListener("click", () => {
-                let storeId = Number(btn.getAttribute("data-store-id"))
 
-                if (confirm(`Аптека #${storeId} будет удалена`)) {
 
-                    let xhr = new XMLHttpRequest();
+        document.getElementById("addStoreModalBtn").addEventListener("click", e => {
+            form.reset();
+        })
 
-                    xhr.responseType = "json"
-                    xhr.onload = () => {
-                        loadingIndicator()
-                        if (CheckCode(xhr)) {
-                            this.closest(".col").remove()
+
+        function addEditDeleteHandlers() {
+            document.querySelectorAll(".edit-btn").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    let store = storesMap[Number(btn.getAttribute("data-store-id"))]
+
+                    document.getElementById("storeId").value = store.id;
+                    document.getElementById("storeAddress").value = store.address;
+                    document.getElementById("storePhone").value = store.contacts.mobile;
+                    document.getElementById("storeEmail").value = store.contacts.email;
+                    document.getElementById("storeLat").value = store.position.lat;
+                    document.getElementById("storeLon").value = store.position.lon;
+                    document.getElementById("storeSchedule").value = store.schedule;
+                    document.getElementById("storeBookingDisable").checked = !store.booking_enable
+
+                    storeModal.show()
+                })
+            })
+            document.querySelectorAll(".delete-btn").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    let storeId = Number(btn.getAttribute("data-store-id"))
+
+                    if (confirm(`Аптека #${storeId} будет удалена`)) {
+
+                        let xhr = new XMLHttpRequest();
+
+                        xhr.responseType = "json"
+                        xhr.onload = () => {
+                            loadingIndicator()
+                            if (CheckCode(xhr)) {
+                                btn.closest(".col").remove()
+                            }
                         }
+                        xhr.open("POST", `/api/stores/delete?store_id=${storeId}`)
+                        withAuth(xhr)
+                        loadingIndicator()
+                        xhr.send()
+
                     }
-                    xhr.open("POST", `/api/stores/delete?store_id=${storeId}`)
-                    withAuth(xhr)
-                    loadingIndicator()
-                    xhr.send()
-
-                }
+                })
             })
-        })
-    }
+        }
 
-</script>
+    </script>
 
 
 {{ end }}

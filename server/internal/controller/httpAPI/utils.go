@@ -61,6 +61,8 @@ func getErrorStatus(err error) (errcodes.Code, int) {
 		return errcodes.ErrInvalidFile, http.StatusBadRequest
 	case failure.IsUnauthorizedError(err):
 		return errcodes.ErrUnauthorized, http.StatusUnauthorized
+	case failure.IsLockedError(err):
+		return errcodes.ErrLocked, http.StatusLocked
 	default:
 		return errcodes.ErrUnknown, http.StatusInternalServerError
 	}
