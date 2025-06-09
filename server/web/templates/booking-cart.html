@@ -1,0 +1,508 @@
+{{ define "book-modal" }}
+
+<style>
+  .cart-item-img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+  }
+
+  .quantity-control {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  #cartItems .list-group-item {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .offcanvas {
+
+  }
+
+  .offcanvas-body {
+    margin-right:4px;
+  }
+
+  .offcanvas-body .sticky-bottom {
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+
+  }
+</style>
+
+
+<!-- Оффканвас корзины -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas">
+  <div class="offcanvas-header border-bottom">
+    <h5 class="offcanvas-title">Ваша корзина</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body p-0">
+    <div class="list-group list-group-flush" id="cartItems">
+      <!-- Товары в корзине будут здесь -->
+    </div>
+
+    <div class="sticky-bottom bg-white border-top p-3">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Итого:</h5>
+        <h5 class="text-primary mb-0" id="cartTotal">0 ₽</h5>
+      </div>
+      <div id="disable-booking-alert" class="d-none alert alert-light border small mb-0">
+        <i class="fas fa-info-circle me-2"></i>
+        Извините, на данный момент бронирование не доступно.
+      </div>
+      <button class="btn btn-primary w-100 mb-2" id="checkoutBtn">
+        <i class="fas fa-shopping-bag me-2"></i>Оформить заказ
+      </button>
+      <button class="btn btn-outline-secondary w-100" id="clearCartBtn">
+        <i class="fas fa-trash-alt me-2"></i>Очистить корзину
+      </button>
+    </div>
+  </div>
+</div>
+
+
+  <!-- Модальное окно оформления заказа -->
+<div class="modal fade" id="checkoutModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title">Оформление бронирования</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="orderForm">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Ваше имя</label>
+            <input name="username" type="text" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Телефон</label>
+            <input name="phone" type="tel" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Комментарий к заказу</label>
+            <textarea name="message" class="form-control" rows="3"></textarea>
+          </div>
+
+          <div class="alert alert-light border small mb-0">
+            <i class="fas fa-info-circle me-2"></i>
+            После оформления заказа товары будут забронированы в выбранной аптеке на <span id="booking-delay">24 часа</span>.
+            Статус бронирования можно отслеживать во вкладке "Мои заказы".
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button id="booking-btn" type="submit" class="btn btn-primary">Забронировать</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  let cartItems = [];
+  let cartCount = 0;
+
+  // Обновление счетчика корзины
+  function updateCartCount() {
+    cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    document.getElementById('cartCount').textContent = cartCount;
+    //document.getElementById('floatingCartCount').textContent = count;
+  }
+
+
+  // Получение времени бронирования
+  function getBookingDelay() {
+    xhr = new XMLHttpRequest();
+
+    xhr.onload = () => {
+      if (!CheckCode(xhr)) {
+        return;
+      }
+
+      document.getElementById("booking-delay").innerText = xhr.response + " " + getNoun(xhr.response, "час", "часа", "часов")
+
+    }
+    xhr.open("GET", `/api/booking/get-delay`);
+    xhr.send();
+  }
+
+
+  // Добавление товара в корзину
+  function addToCart(product, quantity) {
+    // Проверяем, есть ли уже товар в корзине
+    const existingItemIndex = cartItems.findIndex(item => item.id === product.id);
+
+    if (existingItemIndex !== -1) {
+      // Обновляем количество
+
+      if (cartItems[existingItemIndex].quantity < cartItems[existingItemIndex].max_quantity) {
+        cartItems[existingItemIndex].quantity += quantity;
+      }
+    } else {
+      // Добавляем новый товар
+      cartItems.push({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        quantity: quantity,
+        max_quantity: product.count,
+      });
+    }
+
+    // Обновляем счетчик
+    updateCartCount();
+
+    // Показываем уведомление
+    //showNotification(`Добавлено в корзину: ${product.name} (${quantity} шт.)`);
+
+    // Обновляем корзину
+    renderCart();
+  }
+
+
+  function renderCart() {
+    let cartItemsHtml = "";
+    let cartTotal = 0;
+
+    cartItems.forEach((product) => {
+      let discount = 0;
+
+      const promotion = promotions.find(p => p.product_code === product.id);
+      if (promotion) {
+        discount = promotion.discount;
+      }
+
+      let totalPrice = (product.price - discount * 100) * product.quantity
+      cartTotal += totalPrice
+
+      cartItemsHtml += `
+             <div class="list-group-item py-3">
+                <div class="d-flex gap-3">
+                    <div class="flex-shrink-0">
+                        <img src="/image/${product.id}.webp" class="rounded cart-image"
+                             style="width: 60px; height: 60px; object-fit: contain;" alt="">
+                    </div>
+                    <div class="flex-grow-1 d-flex flex-column">
+                        <div class="mb-1">
+                            <h6 class="mb-0 text-truncate-2" style="
+                                display: -webkit-box;
+                                -webkit-line-clamp: 2;
+                                -webkit-box-orient: vertical;
+                                overflow: hidden;
+                                line-height: 1.3;
+                            ">${product.name}</h6>
+                            <div class="d-flex align-items-center justify-content-between mt-1">
+                                <span class="text-muted small">${formatPrice(product.price, discount)} ₽ × ${product.quantity}</span>
+                                <span class="fw-bold">${formatPrice(totalPrice)} ₽</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <div class="quantity-control">
+                                <button class="btn btn-sm btn-outline-secondary decrease-qty p-1 border-0" style="width: 28px; height: 28px;" data-id="${product.id}">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <input id="item-qty-input-${product.id}" type="number" min="1" value="${product.quantity}"
+                                       class="form-control form-control-sm item-qty text-center border-0"
+                                       style="width: 40px; height: 28px;">
+                                <button class="btn btn-sm btn-outline-secondary increase-qty p-1 border-0" style="width: 28px; height: 28px;" data-id="${product.id}">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger remove-item border-0" data-id="${product.id}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            `
+    });
+
+    const cartTotalEl = document.getElementById("cartTotal");
+    cartTotalEl.innerText = `${formatPrice(cartTotal)} ₽`
+
+    const cartItemsEL = document.getElementById("cartItems");
+    cartItemsEL.innerHTML = cartItemsHtml;
+
+    if (cartItems.length === 0) {
+      document.getElementById("checkoutBtn").setAttribute("disabled", "");
+      document.getElementById("booking-btn").setAttribute("disabled", "");
+    } else if (storeInfo.booking_enable) {
+      document.getElementById("checkoutBtn").removeAttribute("disabled");
+      document.getElementById("booking-btn").removeAttribute("disabled");
+    }
+
+
+    // add event listeners
+
+    document.querySelectorAll(".remove-item").forEach(btn => {
+      btn.addEventListener('click', e => {
+        const productId = btn.dataset.id;
+        cartItems = cartItems.filter(prod => {
+          if (prod.id == productId) {
+            updateCartCount();
+            return false
+          }
+          return true
+        })
+
+        renderCart();
+      })
+    })
+
+    document.querySelectorAll(".decrease-qty").forEach(btn => {
+      btn.addEventListener('click', e => {
+        const productId = btn.dataset.id;
+
+        for (let i=0; i < cartItems.length; i++) {
+          if (cartItems[i].quantity > 1 && cartItems[i].id == productId) {
+            cartItems[i].quantity--
+            updateCartCount();
+            renderCart();
+            break;
+          }
+        }
+      })
+    })
+
+    document.querySelectorAll(".increase-qty").forEach(btn => {
+      btn.addEventListener('click', e => {
+        const productId = btn.dataset.id;
+
+        for (let i=0; i < cartItems.length; i++) {
+          if (cartItems[i].quantity < cartItems[i].max_quantity && cartItems[i].id == productId) {
+            cartItems[i].quantity++
+            updateCartCount();
+            renderCart();
+            break;
+          }
+        }
+      })
+    })
+    addAltImage(".cart-image");
+    saveCart();
+  }
+
+  function saveCart() {
+    let exp = new Date();
+    exp.setMonth(exp.getMonth()+1);
+    setCookie("cart", JSON.stringify(cartItems), {path: "/", expires: exp});
+  }
+
+  function readCart() {
+    let cartCookie = getCookie("cart");
+
+    if (cartCookie) {
+      let cart = JSON.parse(cartCookie)
+      if (cart) {
+        cartItems = cart;
+        updateCartCount();
+      }
+    }
+
+    checkCartInStock()
+
+    renderCart();
+  }
+
+  function checkCartInStock(callback) {
+    let storeId = getStoreId();
+
+
+    if (!callback) {
+      callback = () => {}
+    }
+
+    let checkingProducts = []
+
+    cartItems.forEach(prod => {
+      checkingProducts.push({
+        "id": prod.id,
+        "count": prod.quantity
+      })
+    })
+
+    xhr = new XMLHttpRequest();
+
+    xhr.responseType = "json";
+    xhr.onload = () => {
+      if (!CheckCode(xhr)) {
+        return
+      }
+
+      let result = xhr.response? xhr.response : [];
+
+      if (deepEqual(result, checkingProducts)) {
+        callback();
+        return;
+      }
+
+      let mapResult = {}
+      result.forEach(el => mapResult[el.id] = el.count);
+
+
+      let cartInStock = true;
+
+      let resultCart = [];
+      cartItems.forEach(item => {
+        let resultCount = mapResult[item.id];
+        if (resultCount) {
+          if (resultCount < item.quantity) {
+            item.quantity = resultCount
+            cartInStock = false;
+          }
+          if (resultCount > item.max_quantity) {
+            item.max_quantity = resultCount
+          }
+          resultCart.push(item);
+          return
+        }
+        cartInStock = false;
+      })
+      cartItems = resultCart;
+
+      renderCart();
+
+      if (cartInStock) {
+        callback();
+      } else {
+        alert("Некоторых товаров в корзине нет в наличии");
+      }
+    }
+
+    xhr.open("POST", `/api/products/check-in-stock?store_id=${storeId}`);
+    xhr.send(JSON.stringify(checkingProducts));
+  }
+
+  // Показать уведомление
+  function showNotification(message) {
+    // Создаем элемент уведомления
+    const notification = document.createElement('div');
+    notification.className = 'position-fixed bottom-0 end-0 p-3';
+    notification.style.zIndex = '1100';
+
+    const toast = document.createElement('div');
+    toast.className = 'toast show';
+    toast.role = 'alert';
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+
+    toast.innerHTML = `
+                <div class="toast-header bg-success text-white">
+                    <strong class="me-auto"><i class="fas fa-check-circle me-2"></i>Успешно</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                </div>
+                <div class="toast-body">${message}</div>
+            `;
+
+    notification.appendChild(toast);
+    document.body.appendChild(notification);
+
+    // Автоматическое скрытие через 2 секунды
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 500);
+    }, 2000);
+  }
+
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const checkoutModal = new bootstrap.Modal(document.getElementById('checkoutModal'));
+    const clearCartBtn = document.getElementById('clearCartBtn');
+
+    if (!storeInfo.booking_enable) {
+      document.getElementById("disable-booking-alert").classList.remove("d-none");
+      document.getElementById("checkoutBtn").setAttribute("disabled", "");
+      document.getElementById("booking-btn").setAttribute("disabled", "");
+    }
+
+    // Очистка корзины
+    clearCartBtn.addEventListener("click", function () {
+      cartItems = [];
+      cartCount = 0;
+      renderCart();
+      updateCartCount(0);
+    })
+
+
+    // Оформление заказа
+    document.getElementById('checkoutBtn').addEventListener('click', function() {
+      checkCartInStock(() => {
+        checkoutModal.show();
+      })
+    });
+
+    // Обработка оформления заказа
+    document.getElementById('orderForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+
+      let request = {
+        "username": formData.get("username"),
+        "phone": formData.get("phone"),
+        "message": formData.get("message"),
+        "products": []
+      }
+      let checkingProducts = []
+
+      cartItems.forEach(prod => {
+        request.products.push({
+          "code_stu": prod.id,
+          "name": prod.name,
+          "quantity": prod.quantity
+        })
+        checkingProducts.push({
+          "id": prod.id,
+          "count": prod.quantity
+        })
+      })
+
+      // Закрываем окно оформления
+      const checkoutModal = bootstrap.Modal.getInstance(document.getElementById('checkoutModal'));
+      checkoutModal.hide();
+
+      let xhr = new XMLHttpRequest();
+
+      loadingIndicator();
+
+      xhr.responseType = "json"
+      xhr.onload = () => {
+        loadingIndicator();
+        if (!CheckCode(xhr)) {
+          return
+        }
+
+        let booking_id = xhr.response["book_id"];
+
+        addBooking(booking_id)
+
+        clearCartBtn.click();
+        location.replace("/bookings");
+      }
+
+      xhr.open("POST", `/api/booking/create?store_id=${storeId}`);
+      xhr.send(JSON.stringify(request));
+    });
+
+
+    getBookingDelay();
+  })
+
+</script>
+
+{{ end }}

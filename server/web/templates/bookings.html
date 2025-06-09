@@ -9,6 +9,7 @@
     <script src="/static/js/cookie.js"></script>
     <script src="/static/js/util.js"></script>
     <script src="/static/js/wg.js"></script>
+    <script src="/static/js/init.js"></script>
     <style>
         :root {
             --primary-color: #2a7f62;
@@ -52,6 +53,15 @@
             font-size: 1.1rem;
         }
 
+        .order-info-container {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .remove-order {
+            height: fit-content;
+        }
+
         .order-status {
             font-size: 0.85rem;
             padding: 5px 12px;
@@ -77,6 +87,11 @@
         .status-completed {
             background-color: #e2e3e5;
             color: #383d41;
+        }
+
+        .status-cancelled {
+            background-color: #f8d7da;
+            color: #721c24;
         }
 
         .order-body {
@@ -247,18 +262,19 @@
     <div class="orders-list" id="orders-list">
 
     </div>
+    <h4 class="mb-3">Акции</h4>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4" id="promotionsContainer">
+        <!-- Акции будут загружаться здесь -->
+
+    </div>
 </div>
+
+{{template "book-modal" .}}
+
+{{template "footer" .}}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    function CheckCode(xhr) {
-        if (xhr.status === StatusOk) {
-            return true
-        }
-        alert(`Ошибка ${xhr.status}`)
-        return false
-    }
-
     // Фильтрация заказов
     document.querySelectorAll('.dropdown-item').forEach(item => {
         item.addEventListener('click', function(e) {
@@ -356,12 +372,22 @@
             return Date.parse(b.created_at) - Date.parse(a.created_at)
         })
 
-        if (newBookings === bookings) {
+        if (deepEqual(newBookings, bookings)) {
             return
         }
 
         bookings = newBookings;
         renderBookings();
+    }
+
+    function addAltImage() {
+        document.querySelectorAll(".item-image").forEach(el => {
+            function listener() {
+                el.removeEventListener("error", listener)
+                el.setAttribute("src", "/static/img/no_product.webp")
+            }
+            el.addEventListener("error", listener)
+        })
     }
 
     let formatter = new Intl.DateTimeFormat("ru", {
@@ -375,11 +401,34 @@
     });
 
 
+    function LoadPromotion() {
+        let xhr = new XMLHttpRequest();
+
+        xhr.responseType = "json"
+        xhr.onload = () => {
+            if (!CheckCode(xhr)) {
+                return
+            }
+
+            promotions = xhr.response;
+            readCart();
+        }
+
+        xhr.open("GET", `/api/promotion/get?store_id=${storeId}`)
+        xhr.send()
+    }
+
 
     function renderBookings() {
         let bookingsHtml = '';
 
         bookings.forEach(booking => {
+            let store = stores[booking.store_id];
+            if (!store) {
+                deleteBooking(booking.id);
+                return
+            }
+
             let bookItemsHtml = "";
             let sumPrice = 0;
             booking.products.forEach(product => {
@@ -399,7 +448,6 @@
                 `
             })
 
-
             let order_status_class = "";
             let order_status = "";
 
@@ -413,7 +461,7 @@
                     order_status = "Собирается";
                     break
                 case "reject":
-                    order_status_class = "status-reject";
+                    order_status_class = "status-cancelled";
                     order_status = "Отменён";
                     break
                 case "done":
@@ -430,7 +478,7 @@
             let book_end_date = createDate + 3600000 * booking.delay
 
             bookingsHtml += `
-            <div class="order-card">
+            <div class="order-card" id="order-card-${booking.id}">
             <div class="order-header">
                 <div>
                     <h3 class="order-title">Заказ №${booking.id}</h3>
@@ -438,7 +486,9 @@
                 <span class="order-status ${order_status_class}">${order_status}</span>
             </div>
             <div class="order-body">
-                <div class="order-info">
+
+            <div class="order-info-container">
+                 <div class="order-info">
                     <div class="order-info-item">
                         <div class="info-label">Дата оформления</div>
                         <div class="info-value">${formatter.format(createDate).replace(" г. в", ",")}</div>
@@ -452,6 +502,16 @@
                         <div class="info-value">до ${formatter.format(book_end_date).replace(" г. в", ",")}</div>
                     </div>
                 </div>
+                ${
+                booking.status === "receive" || booking.status === "reject"? `
+                <button class="btn btn-sm btn-outline-danger remove-order" data-id="${booking.id}">
+                    <i class="fas fa-trash"></i>
+                </button>
+                ` : ''
+                }
+                </div>
+
+
                 <div class="order-items">${bookItemsHtml}</div>
                 <div class="order-total">
                     <div>Итого:</div>
@@ -463,6 +523,15 @@
         })
 
         document.getElementById("orders-list").innerHTML = bookingsHtml;
+        addAltImage();
+
+        document.querySelectorAll(".remove-order").forEach(btn => {
+            btn.addEventListener("click", () => {
+                let id = Number.parseInt(btn.dataset.id);
+                deleteBooking(id);
+                document.getElementById(`order-card-${id}`).remove();
+            })
+        })
     }
 
 
@@ -471,6 +540,7 @@
     // Анимация при загрузке страницы
     document.addEventListener('DOMContentLoaded', function() {
         const orderCards = document.querySelectorAll('.order-card');
+        LoadPromotion();
 
         setActiveLink("bookings-page-link");
 
@@ -490,7 +560,7 @@
 
         loadingIndicator()
         loadStores(() => {
-            loadBookings(true)
+            loadBookings(true);
         });
 
         setInterval(loadBookings, 10_000);

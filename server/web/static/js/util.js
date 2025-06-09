@@ -1,11 +1,10 @@
-
 const StatusOk = 200;
 const StatusNotFound = 404;
 const StatusUnauthorized = 401;
 
 function FormatTime(tStr) {
     let t = new Date(tStr)
-    return ("0" + t.getDate()).slice(-2) + "-" + ("0"+(t.getMonth()+1)).slice(-2) + "-" +
+    return ("0" + t.getDate()).slice(-2) + "-" + ("0" + (t.getMonth() + 1)).slice(-2) + "-" +
         t.getFullYear() + " " + ("0" + t.getHours()).slice(-2) + ":" + ("0" + t.getMinutes()).slice(-2);
 }
 
@@ -59,17 +58,39 @@ function deleteBooking(booking_id) {
 }
 
 
-function getStoreId() {
-    let storeIdCookie = getCookie("store")
-    if (storeIdCookie) {
-        let storeId = Number.parseInt(storeIdCookie)
-        return storeId ? storeId : ""
-    }
-    return ""
+function addAltImage(selector) {
+    document.querySelectorAll(selector).forEach(el => {
+        function listener() {
+            el.removeEventListener("error", listener)
+            el.setAttribute("src", "/static/img/no_product.webp")
+        }
+
+        el.addEventListener("error", listener)
+    })
 }
 
-function saveStoreId(storeId) {
-    setCookie("store", storeId, {path: "/"})
+var deepEqual = function (x, y) {
+    if (x === y) {
+        return true;
+    }
+    else if ((typeof x == "object" && x != null) && (typeof y == "object" && y != null)) {
+        if (Object.keys(x).length != Object.keys(y).length)
+            return false;
+
+        for (var prop in x) {
+            if (y.hasOwnProperty(prop))
+            {
+                if (! deepEqual(x[prop], y[prop]))
+                    return false;
+            }
+            else
+                return false;
+        }
+
+        return true;
+    }
+    else
+        return false;
 }
 
 
@@ -133,6 +154,36 @@ function loadingIndicator() {
 
 function hideModal(modal) {
     modal.querySelector("button[data-bs-dismiss=modal]").click()
+}
+
+
+function formatPrice(price, discount) {
+    let rub = Math.floor(price / 100);
+    let kop = price % 100;
+
+    if (discount) {
+        rub -= discount
+    }
+    let rubStr = "";
+
+    let i = 0;
+
+    rub.toString().split("").reverse().forEach(d => {
+        i++
+        rubStr =  d + rubStr
+        if ((i % 3) === 0) {
+            rubStr = " " + rubStr
+        }
+    })
+
+    rubStr = rubStr.trimStart()
+
+    if (kop === 0) {
+        return rubStr
+    }
+
+    return `${rubStr},${kop}`
+
 }
 
 

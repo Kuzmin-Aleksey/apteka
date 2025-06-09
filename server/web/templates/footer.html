@@ -1,0 +1,40 @@
+{{ define "footer" }}
+
+<footer class="bg-dark text-white py-4 mt-4">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4">
+        <h5>Лекарства в дорогу</h5>
+        <p>Аптечная сеть с быстрой доставкой лекарств и товаров для здоровья.</p>
+      </div>
+      <div class="col-md-4">
+        <h5>Контакты</h5>
+        <ul class="list-unstyled">
+          <li id="phone"><i class="fas fa-phone me-2"></i> Не указан</li>
+          <li id="email"><i class="fas fa-envelope me-2"></i> Не указан</li>
+        </ul>
+      </div>
+      <div class="col-md-4">
+        <h5>Режим работы</h5>
+        <p id="schedule">Не указан</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (storeInfo.schedule) {
+      document.getElementById("schedule").innerText = storeInfo.schedule;
+    }
+    if (storeInfo.contacts.mobile) {
+      document.getElementById("phone").innerText = storeInfo.contacts.mobile;
+    }
+    if (storeInfo.contacts.email) {
+      document.getElementById("email").innerText = storeInfo.contacts.email;
+    }
+  })
+</script>
+
+{{ end }}
