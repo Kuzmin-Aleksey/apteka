@@ -26,6 +26,7 @@ type DbConfig struct {
 	DBName         string `json:"db_name"`
 	ConnectTimeout int    `json:"connect_timeout"`
 	Encrypt        string `json:"encrypt"`
+	SQLExpress     bool   `json:"sql_express"`
 }
 
 func GetConfig(configPath string) (*Config, error) {

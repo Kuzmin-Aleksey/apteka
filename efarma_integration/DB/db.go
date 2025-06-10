@@ -8,8 +8,14 @@ import (
 )
 
 func Connect(cnf *config.DbConfig) (*sql.DB, error) {
-	db, err := sql.Open("mssql", fmt.Sprintf("sqlserver://%s:%s@%s/SQLExpress?database=%s&encrypt=%s&connection+timeout=%d",
-		cnf.Username, cnf.Password, cnf.Host, cnf.DBName, cnf.Encrypt, cnf.ConnectTimeout))
+	sqlExpressUrl := ""
+
+	if cnf.SQLExpress {
+		sqlExpressUrl = "/SQLExpress"
+	}
+
+	db, err := sql.Open("mssql", fmt.Sprintf("sqlserver://%s:%s@%s%s?database=%s&encrypt=%s&connection+timeout=%d",
+		cnf.Username, cnf.Password, cnf.Host, sqlExpressUrl, cnf.DBName, cnf.Encrypt, cnf.ConnectTimeout))
 	if err != nil {
 		return nil, err
 	}
