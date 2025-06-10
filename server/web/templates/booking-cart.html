@@ -136,7 +136,7 @@
 
   // Получение времени бронирования
   function getBookingDelay() {
-    xhr = new XMLHttpRequest();
+    let xhr = new XMLHttpRequest();
 
     xhr.onload = () => {
       if (!CheckCode(xhr)) {
@@ -351,7 +351,7 @@
       })
     })
 
-    xhr = new XMLHttpRequest();
+    let xhr = new XMLHttpRequest();
 
     xhr.responseType = "json";
     xhr.onload = () => {

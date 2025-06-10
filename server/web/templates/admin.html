@@ -66,14 +66,18 @@
         location.replace("/admin/login")
     }
 
-    let xhr = new XMLHttpRequest();
-    xhr.responseType = "json"
-    xhr.onload = () => {
-        CheckCode(xhr)
+    function checkToken() {
+        let xhr = new XMLHttpRequest();
+        xhr.responseType = "json"
+        xhr.onload = () => {
+            CheckCode(xhr)
+        }
+        xhr.open("GET", "/api/auth/check-token")
+        withAuth(xhr)
+        xhr.send()
     }
-    xhr.open("GET", "/api/auth/check-token")
-    withAuth(xhr)
-    xhr.send()
+    checkToken()
+
 
 
     document.getElementById("logout-btn").addEventListener("click", () => {
