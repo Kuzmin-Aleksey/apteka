@@ -2,7 +2,6 @@ package httpAPI
 
 import (
 	"net/http"
-	"strconv"
 )
 
 func (h *Handler) HandleNotFound(w http.ResponseWriter, r *http.Request) {
@@ -10,11 +9,6 @@ func (h *Handler) HandleNotFound(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) HandleMainPage(w http.ResponseWriter, r *http.Request) {
-	_, err := strconv.Atoi(r.FormValue("store"))
-	if err != nil {
-		return
-	}
-
 	h.handleTemplate(
 		"web/templates/main_page.html",
 		"web/templates/navbar.html",

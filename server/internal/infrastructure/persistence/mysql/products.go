@@ -5,6 +5,7 @@ import (
 	errorsutils "errors"
 	"fmt"
 	"golang.org/x/net/context"
+	"log"
 	"server/internal/domain/entity"
 	"server/pkg/failure"
 )
@@ -93,6 +94,35 @@ func (r *ProductRepo) FindByCode(ctx context.Context, storeId int, code int) (*e
 		return nil, failure.NewInternalError(err.Error())
 	}
 	return &product, nil
+}
+
+func (r *ProductRepo) FindByCodes(ctx context.Context, storeId int, ids []int) ([]entity.Product, error) {
+	products := make([]entity.Product, 0, len(ids))
+	if len(ids) == 0 {
+		return products, nil
+	}
+
+	query := "SELECT * FROM products WHERE Code IN (" + joinNums(ids, ", ") + ") AND StoreID=?"
+
+	log.Println("query: ", query)
+
+	rows, err := r.DB.QueryContext(ctx, query, storeId)
+	if err != nil {
+		if errorsutils.Is(err, sql.ErrNoRows) {
+			return products, nil
+		}
+		return nil, failure.NewInternalError(err.Error())
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		p, err := r.scanProduct(rows)
+		if err != nil {
+			return nil, failure.NewInternalError(err.Error())
+		}
+		products = append(products, p)
+	}
+	return products, nil
 }
 
 func (r *ProductRepo) DeleteByStoreId(ctx context.Context, storeId int) error {

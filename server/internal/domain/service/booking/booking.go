@@ -15,6 +15,7 @@ type BookingRepo interface {
 	Save(ctx context.Context, book *entity.Book) error
 	UpdateStatus(ctx context.Context, bookId int, status string) error
 	GetById(ctx context.Context, bookId int) (*entity.Book, error)
+	GetByIds(ctx context.Context, bookIds []int) ([]entity.Book, error)
 	GetByStore(ctx context.Context, storeId int) ([]entity.Book, error)
 	Delete(ctx context.Context, bookId int) error
 }
@@ -165,6 +166,22 @@ func (s *BookingService) Get(ctx context.Context, bookId int) (*GetBookingRespon
 		Book:  *book,
 		Delay: int(math.Round(s.bookingDelay.Hours())),
 	}, nil
+}
+
+func (s *BookingService) GetByIds(ctx context.Context, bookIds []int) ([]GetBookingResponseDTO, error) {
+	bookings, err := s.repo.GetByIds(ctx, bookIds)
+	if err != nil {
+		return nil, err
+	}
+	resp := make([]GetBookingResponseDTO, len(bookings))
+
+	for i := range bookings {
+		resp[i] = GetBookingResponseDTO{
+			Book:  bookings[i],
+			Delay: int(math.Round(s.bookingDelay.Hours())),
+		}
+	}
+	return resp, nil
 }
 
 func (s *BookingService) GetByStore(ctx context.Context, storeId int) ([]entity.Book, error) {

@@ -1,6 +1,16 @@
 {{ define "book-modal" }}
 
 <style>
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type=number] {
+    -moz-appearance: textfield; /* Firefox */
+  }
+
   .cart-item-img {
     width: 60px;
     height: 60px;
@@ -55,6 +65,10 @@
       <div id="disable-booking-alert" class="d-none alert alert-light border small mb-0">
         <i class="fas fa-info-circle me-2"></i>
         Извините, на данный момент бронирование не доступно.
+      </div>
+      <div id="select-store-alert" class="d-none alert alert-light border small mb-0">
+        <i class="fas fa-info-circle me-2"></i>
+        Выберете аптеку для оформления заказа.
       </div>
       <button class="btn btn-primary w-100 mb-2" id="checkoutBtn">
         <i class="fas fa-shopping-bag me-2"></i>Оформить заказ
@@ -237,6 +251,7 @@
     cartItemsEL.innerHTML = cartItemsHtml;
 
     if (cartItems.length === 0) {
+      console.log("disable booking")
       document.getElementById("checkoutBtn").setAttribute("disabled", "");
       document.getElementById("booking-btn").setAttribute("disabled", "");
     } else if (storeInfo.booking_enable) {
@@ -312,7 +327,9 @@
       }
     }
 
-    checkCartInStock()
+    if (storeInfo) {
+      checkCartInStock()
+    }
 
     renderCart();
   }
@@ -421,15 +438,20 @@
 
 
   document.addEventListener('DOMContentLoaded', function () {
+    if (!storeInfo) {
+      document.getElementById("select-store-alert").classList.remove("d-none")
+      return
+    }
+
     const checkoutModal = new bootstrap.Modal(document.getElementById('checkoutModal'));
     const clearCartBtn = document.getElementById('clearCartBtn');
 
+    document.getElementById("checkoutBtn").removeAttribute("disabled");
+    document.getElementById("booking-btn").removeAttribute("disabled");
+
     if (!storeInfo.booking_enable) {
       document.getElementById("disable-booking-alert").classList.remove("d-none");
-      document.getElementById("checkoutBtn").setAttribute("disabled", "");
-      document.getElementById("booking-btn").setAttribute("disabled", "");
     }
-
     // Очистка корзины
     clearCartBtn.addEventListener("click", function () {
       cartItems = [];

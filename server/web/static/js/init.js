@@ -2,9 +2,9 @@ function getStoreId() {
     let storeIdCookie = getCookie("store")
     if (storeIdCookie) {
         let storeId = Number.parseInt(storeIdCookie)
-        return storeId ? storeId : ""
+        return storeId ? storeId : null
     }
-    return ""
+    return null
 }
 
 function saveStoreId(storeId) {
@@ -14,7 +14,8 @@ function saveStoreId(storeId) {
 
 const params = new URLSearchParams(location.search);
 let storeId = Number.parseInt(params.get("store"));
-let storeInfo = null
+let storeInfo = null;
+let stores = [];
 
 if (storeId) {
     saveStoreId(storeId);
@@ -26,6 +27,7 @@ function CheckCode(xhr) {
     if (xhr.status === StatusOk) {
         return true
     }
+    console.error(xhr.response)
     alert(`Ошибка ${xhr.status}`)
     return false
 }
@@ -45,16 +47,14 @@ function getStoreInfo(callback) {
             return;
         }
 
-        let stores = JSON.parse(xhr.response);
+        stores = JSON.parse(xhr.response);
 
-        stores.forEach(s => {
-            if (s.id === storeId) {
-                storeInfo = s;
-            }
-        })
-        if (!storeInfo) {
-            alert("Аптека не найдена");
-            location.replace("/stores");
+        if (storeId) {
+            stores.forEach(s => {
+                if (s.id === storeId) {
+                    storeInfo = s;
+                }
+            })
         }
     }
     xhr.open("GET", `/api/stores/get`, false);

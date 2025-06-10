@@ -24,16 +24,23 @@
 
 
 <script>
+  function setStoreInfo(info) {
+    if (!info) {
+      return
+    }
+    if (info.schedule) {
+      document.getElementById("schedule").innerText = info.schedule;
+    }
+    if (info.contacts.mobile) {
+      document.getElementById("phone").innerText = info.contacts.mobile;
+    }
+    if (info.contacts.email) {
+      document.getElementById("email").innerText = info.contacts.email;
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
-    if (storeInfo.schedule) {
-      document.getElementById("schedule").innerText = storeInfo.schedule;
-    }
-    if (storeInfo.contacts.mobile) {
-      document.getElementById("phone").innerText = storeInfo.contacts.mobile;
-    }
-    if (storeInfo.contacts.email) {
-      document.getElementById("email").innerText = storeInfo.contacts.email;
-    }
+      setStoreInfo(storeInfo);
   })
 </script>
 

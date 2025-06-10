@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"log"
+	"os/exec"
 	"slices"
 	"store_client/models"
 	"store_client/ui/util"
@@ -130,6 +131,14 @@ func (w *Window) loadBookings() {
 		return
 	}
 
+	for _, booking := range bookings {
+		if booking.Status == models.BookStatusCreated {
+			if !slices.ContainsFunc(w.bookings, func(b models.Booking) bool { return b.Id == booking.Id }) {
+				w.OnNewBooking(&booking)
+			}
+		}
+	}
+
 	w.bookings = bookings
 
 	for i := range w.bookings {
@@ -171,7 +180,7 @@ func (w *Window) deleteBooking(id int) {
 
 }
 
-func NewBookingWindow(a fyne.App, s Service) fyne.Window {
+func NewBookingWindow(a fyne.App, s Service) *Window {
 	w := a.NewWindow(WinTittle)
 
 	return &Window{
@@ -210,5 +219,11 @@ func (w *Window) pingServer() {
 		})
 
 		wg.Wait()
+	}
+}
+
+func (w *Window) OnNewBooking(b *models.Booking) {
+	if err := exec.Command("./notify.exe", "--title", "Новый заказ", "--content", fmt.Sprintf("Заказ №%d", b.Id)).Start(); err != nil {
+		log.Println("show notify error", err)
 	}
 }

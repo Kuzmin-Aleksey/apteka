@@ -13,6 +13,7 @@ type ProductRepo interface {
 	GetAll(ctx context.Context) ([]entity.Product, error)
 	Find(ctx context.Context, storeId int, searchString string) ([]entity.Product, error)
 	FindByCode(ctx context.Context, storeId int, id int) (*entity.Product, error)
+	FindByCodes(ctx context.Context, storeId int, ids []int) ([]entity.Product, error)
 	DeleteByStoreId(ctx context.Context, storeID int) error
 	Save(ctx context.Context, product *entity.Product) error
 }
@@ -87,21 +88,12 @@ func (s *ProductService) filterProductsByBooking(ctx context.Context, storeId in
 }
 
 func (s *ProductService) FindByIdS(ctx context.Context, storeId int, ids []int) (map[int]entity.Product, error) {
-	var products []entity.Product
-
-	for _, id := range ids {
-		product, err := s.productRepo.FindByCode(ctx, storeId, id)
-		if err != nil {
-			if failure.IsNotFoundError(err) {
-				continue
-			}
-			return nil, err
-		}
-
-		products = append(products, *product)
+	products, err := s.productRepo.FindByCodes(ctx, storeId, ids)
+	if err != nil {
+		return nil, err
 	}
 
-	products, err := s.filterProductsByBooking(ctx, storeId, products)
+	products, err = s.filterProductsByBooking(ctx, storeId, products)
 	if err != nil {
 		return nil, err
 	}
@@ -122,14 +114,16 @@ func (s *ProductService) CheckInStock(ctx context.Context, storeId int, checking
 		return nil, err
 	}
 
-	for _, checkingProduct := range checkingProducts {
-		product, err := s.productRepo.FindByCode(ctx, storeId, checkingProduct.CodeSTU)
-		if err != nil {
-			if failure.IsNotFoundError(err) {
-				continue
-			}
-			return nil, err
-		}
+	ids := make([]int, len(checkingProducts))
+
+	for i, p := range checkingProducts {
+		ids[i] = p.CodeSTU
+	}
+
+	products, err := s.productRepo.FindByCodes(ctx, storeId, ids)
+
+	for i, checkingProduct := range checkingProducts {
+		product := products[i]
 
 		for _, bookProduct := range bookProducts {
 			if product.CodeSTU == bookProduct.CodeSTU {

@@ -77,6 +77,42 @@ func (r *BookingRepo) GetById(ctx context.Context, bookId int) (*entity.Book, er
 	return &book, nil
 }
 
+func (r *BookingRepo) GetByIds(ctx context.Context, ids []int) ([]entity.Book, error) {
+	books := make([]entity.Book, 0, len(ids))
+
+	if len(ids) == 0 {
+		return books, nil
+	}
+
+	query := "SELECT * FROM booking WHERE id IN (" + joinNums(ids, ", ") + ")"
+	rows, err := r.QueryContext(ctx, query)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return books, nil
+		}
+		return nil, failure.NewInternalError(err.Error())
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var book entity.Book
+		if err := rows.Scan(&book.Id, &book.StoreId, &book.CreatedAt, &book.Status, &book.Username, &book.Phone, &book.Message); err != nil {
+			return nil, failure.NewInternalError(err.Error())
+		}
+
+		products, err := r.getBookingProducts(ctx, book.Id)
+		if err != nil {
+			return nil, err
+		}
+		book.Products = products
+
+		books = append(books, book)
+
+	}
+
+	return books, nil
+}
+
 func (r *BookingRepo) GetByStore(ctx context.Context, storeId int) ([]entity.Book, error) {
 	var books []entity.Book
 

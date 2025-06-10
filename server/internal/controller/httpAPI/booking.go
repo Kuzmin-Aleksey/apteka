@@ -76,6 +76,23 @@ func (h *Handler) ApiGetBook(w http.ResponseWriter, r *http.Request) {
 	h.writeJSON(w, book)
 }
 
+func (h *Handler) ApiGetBooks(w http.ResponseWriter, r *http.Request) {
+	var ids []int
+
+	if err := json.Unmarshal([]byte(r.FormValue("ids")), &ids); err != nil {
+		h.writeError(w, failure.NewInvalidRequestError("invalid book ids"+": "+err.Error()))
+		return
+	}
+
+	books, err := h.booking.GetByIds(r.Context(), ids)
+	if err != nil {
+		h.writeError(w, err)
+		return
+	}
+
+	h.writeJSON(w, books)
+}
+
 func (h *Handler) ApiGetStoreBookings(w http.ResponseWriter, r *http.Request) {
 	storeId, err := strconv.Atoi(r.FormValue("store_id"))
 	if err != nil {

@@ -148,6 +148,7 @@ func (h *Handler) apiHandler() *mux.Router {
 
 	router.HandleFunc("/booking/create", h.ApiToBook).Methods(post)
 	router.HandleFunc("/booking/get", h.ApiGetBook).Methods(get)
+	router.HandleFunc("/booking/get-by-ids", h.ApiGetBooks).Methods(get)
 	router.HandleFunc("/booking/update-status", h.MwWithApiKey(h.ApiBookUpdateStatus)).Methods(post)
 	router.HandleFunc("/booking/by-store", h.MwWithApiKey(h.ApiGetStoreBookings)).Methods(get)
 	router.HandleFunc("/booking/delete", h.MwWithApiKey(h.ApiDeleteBooking)).Methods(post)

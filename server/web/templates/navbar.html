@@ -34,6 +34,7 @@
 
             .bg-primary-dark {
                 background-color: #1d6a4f !important;
+                /*                rgba(var(--bs-primary-rgb), var(--bs-bg-opacity))*/
             }
 
             .navbar-collapse {
@@ -102,9 +103,6 @@
                     <li class="nav-item">
                         <a class="nav-link bookings-page-link" href="/bookings">Мои заказы</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link promotions-page-link" href="/promotions">Акции</a>
-                    </li>
                 </ul>
             </div>
 
@@ -138,31 +136,29 @@
                 <li class="nav-item">
                     <a class="nav-link bookings-page-link" href="/bookings">Мои заказы</a>
                 </li>
-                <li class="nav-item border-bottom">
-                    <a class="nav-link promotions-page-link" href="/promotions">Акции</a>
-                </li>
             </ul>
         </div>
     </nav>
     <script>
-        function setStoreId() {
-            const storeId = getStoreId();
-            if (storeId !== "") {
-                document.querySelectorAll(".main-page-link").forEach(e => {
-                    e.setAttribute("href", `/?store=${storeId}`);
-                })
-            }
+        if (storeId) {
+            document.querySelectorAll(".main-page-link").forEach(e => {
+                e.setAttribute("href", `/?store=${storeId}`);
+            })
         }
+
 
 
         function setActiveLink(name) {
             document.querySelectorAll(`.${name}`).forEach(e => {
-                e.classList.add("active")
+                e.classList.add("active");
             })
         }
 
-        setStoreId()
-
+        document.addEventListener("DOMContentLoaded", function () {
+            if (storeInfo) {
+                document.getElementById("pharmacyAddress").innerText = storeInfo.address;
+            }
+        })
     </script>
 
 {{ end }}

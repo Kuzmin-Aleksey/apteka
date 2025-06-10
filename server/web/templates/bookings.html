@@ -269,11 +269,12 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 {{template "book-modal" .}}
 
 {{template "footer" .}}
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // Фильтрация заказов
     document.querySelectorAll('.dropdown-item').forEach(item => {
@@ -295,28 +296,12 @@
         });
     });
 
-    let stores = {};
     let bookingIds = getBookings();
     let bookings = [];
 
 
-    function loadStores(callback) {
-        let xhr = new XMLHttpRequest();
-
-        xhr.responseType = "json"
-        xhr.onload = () => {
-            if (!CheckCode(xhr)) {
-                return;
-            }
-            xhr.response.forEach(s => stores[s.id] = s)
-
-            if (callback) {
-                callback()
-            }
-        }
-        xhr.open("GET", `/api/stores/get`);
-        xhr.send();
-    }
+    let storesMap = {};
+    stores.forEach(s => storesMap[s.id] = s)
 
 
     const statusNum = {
@@ -328,56 +313,43 @@
     }
 
 
-    async function loadBookings(use_indicator) {
-        let newBookings = [];
+    function loadBookings(use_indicator) {
+        let xhr = new XMLHttpRequest();
 
-        const wg = new WaitGroup();
+        xhr.responseType = "json";
+        xhr.onload = () => {
+            if (use_indicator) loadingIndicator();
 
-        bookingIds.forEach(id => {
-            wg.add(1);
-
-            let xhr = new XMLHttpRequest();
-
-            xhr.responseType = "json";
-            xhr.onload = () => {
-                wg.done();
-
-                if (xhr.status === StatusNotFound) {
-                    deleteBooking(id);
-                    return;
-                }
-                if (!CheckCode(xhr)) {
-                    return
-                }
-
-                if (xhr.response) {
-                    newBookings.push(xhr.response)
-                }
-
+            if (!CheckCode(xhr)) {
+                return
             }
 
-            xhr.open("GET", `/api/booking/get?book_id=${id}`);
-            xhr.send();
-        })
+            let newBookings = xhr.response ? xhr.response : []
 
-        await wg.wait();
+            bookingIds.forEach(id => {
+                if (!newBookings.find(b => b.id === id)) deleteBooking(id);
+            })
 
-        if (use_indicator) loadingIndicator();
 
-        newBookings = newBookings.sort((a, b) => {
-            let v1 = statusNum[a.status] - statusNum[b.status]
-            if (v1 !== 0) {
-                return v1
+            newBookings = newBookings.sort((a, b) => {
+                let v1 = statusNum[a.status] - statusNum[b.status]
+                if (v1 !== 0) {
+                    return v1
+                }
+                return Date.parse(b.created_at) - Date.parse(a.created_at)
+            })
+
+            if (deepEqual(newBookings, bookings)) {
+                return
             }
-            return Date.parse(b.created_at) - Date.parse(a.created_at)
-        })
 
-        if (deepEqual(newBookings, bookings)) {
-            return
+            bookings = newBookings;
+            renderBookings();
+
         }
 
-        bookings = newBookings;
-        renderBookings();
+        xhr.open("GET", `/api/booking/get-by-ids?ids=${JSON.stringify(bookingIds)}`);
+        xhr.send();
     }
 
     function addAltImage() {
@@ -423,7 +395,7 @@
         let bookingsHtml = '';
 
         bookings.forEach(booking => {
-            let store = stores[booking.store_id];
+            let store = storesMap[booking.store_id];
             if (!store) {
                 deleteBooking(booking.id);
                 return
@@ -495,7 +467,7 @@
                     </div>
                     <div class="order-info-item">
                         <div class="info-label">Аптека</div>
-                        <div class="info-value">${stores[booking.store_id].address}</div>
+                        <div class="info-value">${storesMap[booking.store_id].address}</div>
                     </div>
                     <div class="order-info-item">
                         <div class="info-label">Срок бронирования</div>
@@ -540,7 +512,8 @@
     // Анимация при загрузке страницы
     document.addEventListener('DOMContentLoaded', function() {
         const orderCards = document.querySelectorAll('.order-card');
-        LoadPromotion();
+
+        if (storeInfo) LoadPromotion();
 
         setActiveLink("bookings-page-link");
 
@@ -559,11 +532,11 @@
 
 
         loadingIndicator()
-        loadStores(() => {
-            loadBookings(true);
-        });
 
-        setInterval(loadBookings, 10_000);
+        loadBookings(true);
+
+
+        setInterval(loadBookings, 5_000);
     });
 </script>
 </body>
