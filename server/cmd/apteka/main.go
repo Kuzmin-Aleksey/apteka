@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"server/config"
-	"server/internal/app/app"
+	"server/internal/app"
 )
 
 const configPath = "config/config.yaml"

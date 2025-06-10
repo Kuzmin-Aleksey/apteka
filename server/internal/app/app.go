@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"server/config"
-	"server/internal/app/app/server"
+	"server/internal/app/server"
 	"server/internal/controller/httpAPI"
 	"server/internal/domain/service/auth"
 	"server/internal/domain/service/booking"
