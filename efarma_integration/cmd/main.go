@@ -42,7 +42,7 @@ func main() {
 		c = client.New(&cnf.HttpClient)
 	}
 
-	a := app.NewApp(productRepo, c, cnf.StoreId)
+	a := app.NewApp(productRepo, c, cnf.DbStoreId, cnf.StoreId)
 
 	a.Run()
 }

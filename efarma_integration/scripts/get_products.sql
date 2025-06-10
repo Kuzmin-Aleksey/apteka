@@ -1,6 +1,6 @@
 -- arguments: (store_id int)
 SELECT
-    CAST(G.CODE AS INT) AS CODE,
+    CAST(G.CODE AS BIGINT) AS CODE,
     ISNULL(CAST((
         SELECT TOP 1
             KIZ.GTIN

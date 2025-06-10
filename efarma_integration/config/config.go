@@ -7,6 +7,7 @@ import (
 )
 
 type Config struct {
+	DbStoreId  int              `json:"db_store_id"`
 	StoreId    int              `json:"store_id"`
 	HttpClient HttpClientConfig `json:"http_client"`
 	DB         DbConfig         `json:"db"`

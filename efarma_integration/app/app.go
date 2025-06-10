@@ -18,21 +18,23 @@ type Client interface {
 }
 
 type App struct {
-	repo    ProductRepo
-	client  Client
-	storeId int
+	repo      ProductRepo
+	client    Client
+	dbStoreId int
+	storeId   int
 }
 
-func NewApp(repo ProductRepo, client Client, storeId int) *App {
+func NewApp(repo ProductRepo, client Client, dbStoreId, storeId int) *App {
 	return &App{
-		repo:    repo,
-		client:  client,
-		storeId: storeId,
+		repo:      repo,
+		client:    client,
+		dbStoreId: dbStoreId,
+		storeId:   storeId,
 	}
 }
 
 func (app *App) Run() {
-	products, err := app.repo.GetProducts(app.storeId)
+	products, err := app.repo.GetProducts(app.dbStoreId)
 	if err != nil {
 		log.Fatal(err)
 	}
