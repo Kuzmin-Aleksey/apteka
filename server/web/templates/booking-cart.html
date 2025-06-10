@@ -395,6 +395,7 @@
       if (cartInStock) {
         callback();
       } else {
+        updateCartCount();
         alert("Некоторых товаров в корзине нет в наличии");
       }
     }

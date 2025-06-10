@@ -5,7 +5,6 @@ import (
 	errorsutils "errors"
 	"fmt"
 	"golang.org/x/net/context"
-	"log"
 	"server/internal/domain/entity"
 	"server/pkg/failure"
 )
@@ -103,8 +102,6 @@ func (r *ProductRepo) FindByCodes(ctx context.Context, storeId int, ids []int) (
 	}
 
 	query := "SELECT * FROM products WHERE Code IN (" + joinNums(ids, ", ") + ") AND StoreID=?"
-
-	log.Println("query: ", query)
 
 	rows, err := r.DB.QueryContext(ctx, query, storeId)
 	if err != nil {

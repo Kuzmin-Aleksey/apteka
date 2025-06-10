@@ -121,9 +121,16 @@ func (s *ProductService) CheckInStock(ctx context.Context, storeId int, checking
 	}
 
 	products, err := s.productRepo.FindByCodes(ctx, storeId, ids)
+	productsMap := make(map[int]entity.Product)
+	for _, product := range products {
+		productsMap[product.CodeSTU] = product
+	}
 
-	for i, checkingProduct := range checkingProducts {
-		product := products[i]
+	for _, checkingProduct := range checkingProducts {
+		product, ok := productsMap[checkingProduct.CodeSTU]
+		if !ok {
+			continue
+		}
 
 		for _, bookProduct := range bookProducts {
 			if product.CodeSTU == bookProduct.CodeSTU {

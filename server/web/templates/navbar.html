@@ -1,13 +1,22 @@
 {{ define "navbar" }}
     <style>
+        .navbar {
+            padding: 0 !important;
+        }
+
         #pharmacyAddress {
             font-size: 0.8rem;
             line-height: 1.2;
             margin-top: 2px;
         }
 
+        .navbar-brand {
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+
         .navbar-brand img {
-            height: 40px;
+            height: 80px;
             flex-direction: column;
             align-items: flex-start !important;
         }
@@ -29,7 +38,7 @@
             }
 
             .navbar-brand img {
-                height: 30px;
+                height: 70px;
             }
 
             .bg-primary-dark {
@@ -83,7 +92,7 @@
             <!-- Левая часть: логотип и адрес -->
             <div class="d-flex align-items-center">
                 <a class="navbar-brand d-flex align-items-center" href="#">
-                    <img src="/static/img/logo-min-bg-none.png" alt="" class="me-2">
+                    <img src="/static/img/logo-no-bg.png" alt="" class="me-2">
                     <div>
                         <span class="d-sm-inline">Лекарства в дорогу</span>
                         <div class="text-white-50 small" id="pharmacyAddress">ул. Ленина, 10</div>

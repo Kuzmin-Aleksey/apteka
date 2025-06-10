@@ -61,18 +61,10 @@ func (s *Service) GetBookings() ([]models.Booking, error) {
 		return nil, failure.NewServerError(readError(resp.Body), resp.StatusCode)
 	}
 
-	var books []models.Booking
-
-	if err := json.NewDecoder(resp.Body).Decode(&books); err != nil {
-		return nil, err
-	}
-
 	var bookings []models.Booking
 
-	for _, booking := range books {
-		if _, ok := deletingBookings[booking.Id]; !ok {
-			bookings = append(bookings, booking)
-		}
+	if err := json.NewDecoder(resp.Body).Decode(&bookings); err != nil {
+		return nil, err
 	}
 
 	SortBookings(bookings)
@@ -138,13 +130,6 @@ func (s *Service) Ping() error {
 		return errors.New("invalid server response")
 	}
 
-	return nil
-}
-
-var deletingBookings = make(map[int]struct{})
-
-func (s *Service) deleteBooking(id int) error {
-	deletingBookings[id] = struct{}{}
 	return nil
 }
 
