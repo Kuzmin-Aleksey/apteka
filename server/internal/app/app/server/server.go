@@ -2,7 +2,9 @@ package server
 
 import (
 	"golang.org/x/net/context"
+	"log"
 	"net/http"
+	"os"
 	"server/config"
 	"time"
 )
@@ -24,6 +26,7 @@ func CreateHttpServer(handler http.Handler, l Logger, cfg *config.HttpConfig) *H
 			Handler:      handler,
 			ReadTimeout:  time.Duration(cfg.ReadTimeoutSec) * time.Second,
 			WriteTimeout: time.Duration(cfg.WriteTimeoutSec) * time.Second,
+			ErrorLog:     log.New(os.Stderr, "HTTP server: ", log.LstdFlags),
 		},
 		l:   l,
 		cfg: cfg,

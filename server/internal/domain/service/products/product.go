@@ -177,12 +177,12 @@ func (s *ProductService) UploadProducts(ctx context.Context, products []entity.P
 		}
 	}
 
-	if err := tx_manager.Commit(ctx); err != nil {
-		return failure.NewInternalError(err.Error())
-	}
-
 	if err := s.storeRepo.SetLastUploadTime(ctx, products[0].StoreId, time.Now()); err != nil {
 		return err
+	}
+
+	if err := tx_manager.Commit(ctx); err != nil {
+		return failure.NewInternalError(err.Error())
 	}
 
 	return nil

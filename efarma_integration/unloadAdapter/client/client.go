@@ -31,7 +31,7 @@ func (c *Client) Unload(data io.Reader) error {
 	}
 
 	req.Header.Add("Content-Type", "application/octet-stream")
-	req.Header.Add("X-Api-Key", c.apiKey)
+	req.Header.Add("Authorization", "ApiKey "+c.apiKey)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

@@ -1,7 +1,9 @@
 package httpAPI
 
 import (
+	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"server/internal/domain/service/products"
 	"server/internal/domain/service/products/product_decoder"
@@ -28,7 +30,13 @@ func (h *Handler) ApiHandleSearchProducts(w http.ResponseWriter, r *http.Request
 }
 
 func (h *Handler) ApiHandleUploadProducts(w http.ResponseWriter, r *http.Request) {
-	prods, err := product_decoder.Decode(r.Body)
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		h.writeError(w, failure.NewInvalidRequestError(err.Error()))
+		return
+	}
+
+	prods, err := product_decoder.Decode(bytes.NewReader(body))
 	if err != nil {
 		h.writeError(w, err)
 		return
