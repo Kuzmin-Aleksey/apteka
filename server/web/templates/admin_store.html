@@ -89,11 +89,66 @@
 
         </div>
     </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let storesMap = {}
 
         const storeCards = document.getElementById("store-cards")
-        const storeModal = new bootstrap.Modal(document.getElementById("addStoreModal"))
+        const storeModalEl = document.getElementById("addStoreModal")
+        const storeModal = new bootstrap.Modal(storeModalEl)
+
+        let map, marker;
+
+
+        function initMap() {
+            // Центр карты по умолчанию (Москва)
+            const defaultCenter = [55.7558, 37.6176];
+
+            // Создаем карту
+            map = L.map('map').setView(defaultCenter, 13);
+
+            // Добавляем слой OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Добавляем маркер
+            marker = L.marker(defaultCenter, {
+                draggable: true
+            }).addTo(map);
+
+            // Обработчик перемещения маркера
+            marker.on('dragend', function(e) {
+                const position = marker.getLatLng();
+                document.getElementById('storeLat').value = position.lat.toFixed(6);
+                document.getElementById('storeLon').value = position.lng.toFixed(6);
+            });
+
+            // Обработчик клика по карте
+            map.on('click', function(e) {
+                const position = e.latlng;
+                marker.setLatLng(position);
+                document.getElementById('storeLat').value = position.lat.toFixed(6);
+                document.getElementById('storeLon').value = position.lng.toFixed(6);
+            });
+
+            // Связываем поля ввода с маркером
+            document.getElementById('storeLat').addEventListener('change', updateMarkerPosition);
+            document.getElementById('storeLon').addEventListener('change', updateMarkerPosition);
+        }
+
+        // Обновление позиции маркера при изменении полей ввода
+        function updateMarkerPosition() {
+            const lat = parseFloat(document.getElementById('storeLat').value);
+            const lon = parseFloat(document.getElementById('storeLon').value);
+
+            if (!isNaN(lat) && !isNaN(lon)) {
+                const newPosition = [lat, lon];
+                marker.setLatLng(newPosition);
+                map.setView(newPosition, 13);
+            }
+        }
+
 
         function loadStores() {
             let xhr = new XMLHttpRequest();
@@ -171,7 +226,7 @@
 
         }
 
-        loadStores()
+
 
         const form = document.querySelector('form[name="add-store-form"]')
         form.addEventListener('submit', e => {
@@ -274,6 +329,32 @@
                 })
             })
         }
+
+
+        document.addEventListener("DOMContentLoaded", function () {
+            loadStores()
+
+            // Инициализация карты при открытии модального окна
+            storeModalEl.addEventListener('shown.bs.modal', function() {
+                // Инициализируем карту только если она еще не создана
+                if (!map) {
+                    initMap();
+                } else {
+                    // Обновляем размер карты при повторном открытии
+                    setTimeout(function() {
+                        map.invalidateSize();
+                    }, 100);
+                }
+
+                // Установим значения по умолчанию, если поля пустые
+                if (!document.getElementById('storeLat').value) {
+                    const position = marker.getLatLng();
+                    document.getElementById('storeLat').value = position.lat.toFixed(6);
+                    document.getElementById('storeLon').value = position.lng.toFixed(6);
+                }
+            });
+        })
+
 
     </script>
 
