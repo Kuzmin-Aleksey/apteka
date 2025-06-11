@@ -553,11 +553,9 @@
         const stockBadge = document.getElementById('productModalStock');
         if (product.count <= 0) {
             stockBadge.textContent = 'Нет в наличии';
-            stockBadge.className = 'badge bg-danger';
             document.getElementById('addToCartFromModal').disabled = true;
         } else {
             stockBadge.textContent = product.count + " шт.";
-            stockBadge.className = 'badge bg-success';
             document.getElementById('addToCartFromModal').disabled = false;
         }
 
