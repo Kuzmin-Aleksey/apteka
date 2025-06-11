@@ -13,6 +13,8 @@
         .navbar-brand {
             padding-top: 0 !important;
             padding-bottom: 0 !important;
+            max-width: 4rem;
+            overflow: visible;
         }
 
         .navbar-brand img {
@@ -119,7 +121,7 @@
             <div class="d-flex align-items-center">
                 <!-- Корзина - видна всегда -->
                 <button class="btn btn-outline-light position-relative me-2 me-lg-0" data-bs-toggle="offcanvas"
-                        data-bs-target="#cartOffcanvas">
+                        data-bs-target="#cartOffcanvas" id="cartBtn">
                     <i class="fas fa-shopping-cart"></i>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
                           id="cartCount">0</span>
