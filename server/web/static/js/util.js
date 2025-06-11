@@ -157,13 +157,20 @@ function hideModal(modal) {
 }
 
 
-function formatPrice(price, discount) {
+function formatPrice(price, promo) {
+    if (promo) {
+        if (promo.is_percent) {
+            price = price - price * promo.discount / 100
+        } else {
+            price -= promo.discount * 100
+        }
+    }
+
+    price = Math.floor(price)
+
     let rub = Math.floor(price / 100);
     let kop = price % 100;
 
-    if (discount) {
-        rub -= discount
-    }
     let rubStr = "";
 
     let i = 0;

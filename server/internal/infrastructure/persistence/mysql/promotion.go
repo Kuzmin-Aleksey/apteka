@@ -19,16 +19,16 @@ func NewPromotion(db DB) *PromotionRepo {
 }
 
 func (r *PromotionRepo) Save(ctx context.Context, promotion *entity.Promotion) error {
-	if _, err := r.DB.ExecContext(ctx, "INSERT INTO promotions (product_code, product_name, discount) VALUES (?, ?, ?)",
-		promotion.ProductCode, promotion.ProductName, promotion.Discount); err != nil {
+	if _, err := r.DB.ExecContext(ctx, "INSERT INTO promotions (product_code, product_name, discount, is_percent) VALUES (?, ?, ?, ?)",
+		promotion.ProductCode, promotion.ProductName, promotion.Discount, promotion.IsPercent); err != nil {
 		return failure.NewInternalError(err.Error())
 	}
 	return nil
 }
 
 func (r *PromotionRepo) Update(ctx context.Context, promotion *entity.Promotion) error {
-	if _, err := r.DB.ExecContext(ctx, "UPDATE promotions SET product_name=?, discount=? WHERE product_code=?",
-		promotion.ProductName, promotion.Discount, promotion.ProductCode); err != nil {
+	if _, err := r.DB.ExecContext(ctx, "UPDATE promotions SET product_name=?, discount=?, is_percent=? WHERE product_code=?",
+		promotion.ProductName, promotion.Discount, promotion.IsPercent, promotion.ProductCode); err != nil {
 		return failure.NewInternalError(err.Error())
 	}
 	return nil
@@ -62,7 +62,7 @@ func (r *PromotionRepo) GetAll(ctx context.Context) ([]entity.Promotion, error) 
 
 	for rows.Next() {
 		var promotion entity.Promotion
-		if err := rows.Scan(&promotion.ProductCode, &promotion.ProductName, &promotion.Discount); err != nil {
+		if err := rows.Scan(&promotion.ProductCode, &promotion.ProductName, &promotion.Discount, &promotion.IsPercent); err != nil {
 			return nil, failure.NewInternalError(err.Error())
 		}
 		promotions = append(promotions, promotion)

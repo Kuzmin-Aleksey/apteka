@@ -79,7 +79,7 @@
                         <strong>Формат файла:</strong><br>
                         Колонка A: Код товара (число)<br>
                         Колонка B: Название товара (строка)<br>
-                        Колонка C: Скидка в рублях (число)
+                        Колонка C: Скидка в рублях или процентах
                     </small>
                 </div>
             </div>
@@ -112,7 +112,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="discount" class="form-label">Скидка</label>
-                        <input type="number" min="1" class="form-control" id="discount" required>
+                        <input class="form-control" id="discount" required>
                     </div>
                 </form>
             </div>
@@ -249,17 +249,29 @@
     savePromotionBtn.addEventListener('click', function () {
         const productCode = Number(document.getElementById('productCode').value);
         const productName = document.getElementById('productName').value;
-        const discount = Number(document.getElementById('discount').value);
+        const discountStr = document.getElementById('discount').value;
 
-        if (!productCode || !productName || !discount) {
+        let trimDiscount = discountStr.replaceAll("%", "").trim();
+
+        if (!productCode || !productName || !trimDiscount) {
             alert('Пожалуйста, заполните все поля');
             return;
         }
+
+        let isPercent = false
+        let discount = Number(trimDiscount)
+
+        if (trimDiscount !== discountStr) {
+            isPercent = true
+        }
+
+
 
         let promotion = {
             "product_code": productCode,
             "product_name": productName,
             "discount": discount,
+            "is_percent": isPercent,
         }
 
         let xhr = new XMLHttpRequest();
@@ -371,8 +383,8 @@
             <tr>
                 <td>${promotion.product_code}</td>
                 <td>${promotion.product_name}</td>
-                <td data-value="${promotion.discount}">
-                    <span class="text-success fw-bold">${promotion.discount} ₽</span>
+                <td data-value="${promotion.discount + (promotion.is_percent ? "%" : 0)}">
+                    <span class="text-success fw-bold">${promotion.discount} ${promotion.is_percent ? "%" : "₽"}</span>
 
                 </td>
                 <td>

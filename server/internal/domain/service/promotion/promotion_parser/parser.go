@@ -5,6 +5,7 @@ import (
 	"io"
 	"server/internal/domain/entity"
 	"server/pkg/failure"
+	"strings"
 	"unicode"
 )
 
@@ -38,14 +39,26 @@ func ParseDoc(doc io.Reader) ([]entity.Promotion, error) {
 		if len(row[0]) == 0 || len(row[1]) == 0 || len(row[2]) == 0 {
 			continue
 		}
+
+		discount, isPercent := parseDiscount(strings.TrimSpace(row[2]))
+
 		promotions = append(promotions, entity.Promotion{
 			ProductCode: parseInt(row[0]),
-			ProductName: row[1],
-			Discount:    parseInt(row[2]),
+			ProductName: strings.TrimSpace(row[1]),
+			Discount:    discount,
+			IsPercent:   isPercent,
 		})
 	}
 
 	return promotions, nil
+}
+
+func parseDiscount(s string) (int, bool) {
+	if strings.HasSuffix(s, "%") {
+		return parseInt(strings.TrimSuffix(s, "%")), true
+	}
+
+	return parseInt(s), false
 }
 
 func parseInt(s string) int {

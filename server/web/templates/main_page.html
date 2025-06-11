@@ -401,7 +401,7 @@
           <div class="d-flex justify-content-between align-items-center">
             <div>
               ${promotion ? `<span class="old-price">${formatPrice(product.price)} ₽</span>
-              <div class="fw-bold text-primary">${formatPrice(product.price, promotion.discount)} ₽</div>` :
+              <div class="fw-bold text-primary">${formatPrice(product.price, promotion)} ₽</div>` :
                 `<div class="fw-bold">${formatPrice(product.price)} ₽</div>`}
             </div>
             ${product.count <= 0 ?
@@ -514,7 +514,7 @@
         document.getElementById('productModalGTIN').textContent = product.gtin || 'Не указано';
         document.getElementById('productModalQuantity').textContent = product.count;
         if (promotion) {
-            document.getElementById('productModalPrice').textContent = `${formatPrice(product.price, promotion.discount)} ₽`;
+            document.getElementById('productModalPrice').textContent = `${formatPrice(product.price, promotion)} ₽`;
             document.getElementById('productModalOldPrice').innerHTML = `<del>${formatPrice(product.price)} ₽</del>`;
         } else {
             document.getElementById('productModalPrice').textContent = `${formatPrice(product.price)} ₽`;
@@ -569,7 +569,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <span class="old-price">${formatPrice(promo.product.price)} ₽</span>
-                                    <div class="fw-bold text-primary">${formatPrice(promo.product.price, promo.discount)} ₽</div>
+                                    <div class="fw-bold text-primary">${formatPrice(promo.product.price, promo)} ₽</div>
                                 </div>
                                 <button class="btn btn-sm btn-outline-primary add-promo-to-cart-btn" data-id="${promo.product_code}">В корзину</button>
                             </div>

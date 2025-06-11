@@ -48,10 +48,11 @@ create fulltext index ft_name_description
 
 create table promotions
 (
-    product_code int          not null
+    product_code int               not null
         primary key,
-    product_name varchar(250) not null,
-    discount     int          not null
+    product_name varchar(250)      not null,
+    discount     int               not null,
+    is_percent   tinyint default 0 not null
 );
 
 create table stores

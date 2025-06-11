@@ -126,7 +126,12 @@ func (s *BookingService) ToBook(ctx context.Context, storeId int, dto *CreateBoo
 	for i, p := range dto.Products {
 		for _, promotion := range promotions {
 			if promotion.ProductCode == p.CodeSTU {
-				dto.Products[i].Price = p.Price - (promotion.Discount * 100)
+				if promotion.IsPercent {
+					price := dto.Products[i].Price
+					dto.Products[i].Price = price - price*promotion.Discount/100
+				} else {
+					dto.Products[i].Price = p.Price - (promotion.Discount * 100)
+				}
 			}
 		}
 	}
