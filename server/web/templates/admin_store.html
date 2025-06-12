@@ -102,10 +102,18 @@
 
         function initMap() {
             // Центр карты по умолчанию (Калининград)
-            const defaultCenter = [54.706797, 20.509458];
+            let center = [54.706797, 20.509458];
+
+            const storeLatEl = document.getElementById('storeLat');
+            const storeLonEl = document.getElementById('storeLon');
+
+            if (storeLatEl.value && storeLonEl.value) {
+                center = [parseFloat(storeLatEl.value), parseFloat(storeLonEl.value)]
+            }
+
 
             // Создаем карту
-            map = L.map('map').setView(defaultCenter, 13);
+            map = L.map('map').setView(center, 13);
 
             // Добавляем слой OpenStreetMap
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -113,28 +121,28 @@
             }).addTo(map);
 
             // Добавляем маркер
-            marker = L.marker(defaultCenter, {
+            marker = L.marker(center, {
                 draggable: true
             }).addTo(map);
 
             // Обработчик перемещения маркера
             marker.on('dragend', function(e) {
                 const position = marker.getLatLng();
-                document.getElementById('storeLat').value = position.lat.toFixed(6);
-                document.getElementById('storeLon').value = position.lng.toFixed(6);
+                storeLatEl.value = position.lat.toFixed(6);
+                storeLonEl.value = position.lng.toFixed(6);
             });
 
             // Обработчик клика по карте
             map.on('click', function(e) {
                 const position = e.latlng;
                 marker.setLatLng(position);
-                document.getElementById('storeLat').value = position.lat.toFixed(6);
-                document.getElementById('storeLon').value = position.lng.toFixed(6);
+                storeLatEl.value = position.lat.toFixed(6);
+                storeLonEl.value = position.lng.toFixed(6);
             });
 
             // Связываем поля ввода с маркером
-            document.getElementById('storeLat').addEventListener('change', updateMarkerPosition);
-            document.getElementById('storeLon').addEventListener('change', updateMarkerPosition);
+            storeLatEl.addEventListener('change', updateMarkerPosition);
+            storeLonEl.addEventListener('change', updateMarkerPosition);
         }
 
         // Обновление позиции маркера при изменении полей ввода
@@ -344,6 +352,8 @@
                     setTimeout(function() {
                         map.invalidateSize();
                     }, 100);
+
+                    updateMarkerPosition();
                 }
 
                 // Установим значения по умолчанию, если поля пустые
