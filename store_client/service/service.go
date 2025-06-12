@@ -178,10 +178,11 @@ func (v urlValues) String() string {
 
 func SortBookings(bookings []models.Booking) {
 	slices.SortFunc(bookings, func(i, j models.Booking) int {
-		if i.Status == j.Status {
+		k := statusesSortMap[i.Status] - statusesSortMap[j.Status]
+		if k == 0 {
 			return -i.CreatedAt.Compare(j.CreatedAt)
 		}
-		return statusesSortMap[i.Status] - statusesSortMap[j.Status]
+		return k
 
 	})
 }
@@ -189,8 +190,9 @@ func SortBookings(bookings []models.Booking) {
 var statusesSortMap = map[string]int{
 	models.BookStatusCreated:   1,
 	models.BookStatusConfirmed: 2,
-	models.BookStatusRejected:  3,
-	models.BookStatusDone:      4,
+	models.BookStatusDone:      3,
+	models.BookStatusRejected:  4,
+	models.BookStatusReceive:   4,
 }
 
 type errorResponse struct {
