@@ -154,13 +154,12 @@ SELECT
 FROM products
 WHERE 
 	StoreID = ?
-
-ORDER BY score DESC
 )
 
 SELECT 
 	p.Code, p.StoreID, p.GTIN, p.Name, p.Count, p.Price, p.Producer, p.Country, p.Description
 FROM res r
 inner join products p ON p.Code = r.Code AND p.StoreID = ?
-WHERE r.score > 0;
+WHERE r.score > 0
+ORDER BY r.score DESC;
 `
