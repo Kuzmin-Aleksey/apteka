@@ -3,19 +3,24 @@ package products
 import (
 	"context"
 	"fmt"
+	"server/internal/domain/aggregate"
 	"server/internal/domain/entity"
 	"server/pkg/failure"
 	"server/pkg/tx_manager"
+	"slices"
 	"time"
 )
 
 type ProductRepo interface {
 	GetAll(ctx context.Context) ([]entity.Product, error)
-	Find(ctx context.Context, storeId int, searchString string) ([]entity.Product, error)
 	FindByCode(ctx context.Context, storeId int, id int) (*entity.Product, error)
 	FindByCodes(ctx context.Context, storeId int, ids []int) ([]entity.Product, error)
 	DeleteByStoreId(ctx context.Context, storeID int) error
 	Save(ctx context.Context, product *entity.Product) error
+}
+
+type Searcher interface {
+	Search(ctx context.Context, storeId int, searchString string) ([]aggregate.SearchResult, error)
 }
 
 type StoreRepo interface {
@@ -28,17 +33,20 @@ type BookingRepo interface {
 
 type ProductService struct {
 	productRepo ProductRepo
+	searcher    Searcher
 	storeRepo   StoreRepo
 	bookingRepo BookingRepo
 }
 
 func NewProductService(
 	productRepo ProductRepo,
+	searcher Searcher,
 	storeRepo StoreRepo,
 	bookingRepo BookingRepo,
 ) *ProductService {
 	return &ProductService{
 		productRepo: productRepo,
+		searcher:    searcher,
 		storeRepo:   storeRepo,
 		bookingRepo: bookingRepo,
 	}
@@ -49,9 +57,27 @@ func (s *ProductService) GetAll(ctx context.Context) ([]entity.Product, error) {
 }
 
 func (s *ProductService) Search(ctx context.Context, storeId int, searchString string) ([]entity.Product, error) {
-	products, err := s.productRepo.Find(ctx, storeId, searchString)
+	results, err := s.searcher.Search(ctx, storeId, searchString)
 	if err != nil {
 		return nil, err
+	}
+
+	slices.SortFunc(results, func(a, b aggregate.SearchResult) int {
+		return b.Compare(a)
+	})
+
+	products := make([]entity.Product, len(results))
+
+	for i, result := range results {
+		product, err := s.productRepo.FindByCode(ctx, storeId, result.Code)
+		if err != nil {
+			if failure.IsNotFoundError(err) {
+				continue
+			}
+			return nil, err
+		}
+
+		products[i] = *product
 	}
 
 	products, err = s.filterProductsByBooking(ctx, storeId, products)

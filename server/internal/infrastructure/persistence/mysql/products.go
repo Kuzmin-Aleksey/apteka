@@ -5,6 +5,7 @@ import (
 	errorsutils "errors"
 	"fmt"
 	"golang.org/x/net/context"
+	"server/internal/domain/aggregate"
 	"server/internal/domain/entity"
 	"server/pkg/failure"
 )
@@ -51,27 +52,27 @@ func (r *ProductRepo) GetAll(ctx context.Context) ([]entity.Product, error) {
 	return products, nil
 }
 
-func (r *ProductRepo) Find(ctx context.Context, storeId int, searchString string) ([]entity.Product, error) {
-	products := make([]entity.Product, 0)
+func (r *ProductRepo) Search(ctx context.Context, storeId int, searchString string) ([]aggregate.SearchResult, error) {
+	results := make([]aggregate.SearchResult, 0)
 
-	rows, err := r.DB.QueryContext(ctx, queryFindProducts, searchString, storeId, storeId)
+	rows, err := r.DB.QueryContext(ctx, queryFindProducts, searchString, storeId)
 	if err != nil {
 		if errorsutils.Is(err, sql.ErrNoRows) {
-			return products, nil
+			return results, nil
 		}
 		return nil, failure.NewInternalError(err.Error())
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		p, err := r.scanProduct(rows)
-		if err != nil {
+		var result aggregate.SearchResult
+		if err := rows.Scan(&result.Code, &result.Relevance); err != nil {
 			return nil, failure.NewInternalError(err.Error())
 		}
-		products = append(products, p)
+		results = append(results, result)
 	}
 
-	return products, nil
+	return results, nil
 }
 
 func (r *ProductRepo) Save(ctx context.Context, product *entity.Product) error {
@@ -147,19 +148,9 @@ func (r *ProductRepo) scanProduct(s Scanner) (entity.Product, error) {
 }
 
 const queryFindProducts = `
-WITH res AS (
 SELECT
 	Code,
-	MATCH (Name,Description) AGAINST (?) AS score
+	MATCH(Name,Description) AGAINST (?) AS relevance
 FROM products
-WHERE 
-	StoreID = ?
-)
-
-SELECT 
-	p.Code, p.StoreID, p.GTIN, p.Name, p.Count, p.Price, p.Producer, p.Country, p.Description
-FROM res r
-inner join products p ON p.Code = r.Code AND p.StoreID = ?
-WHERE r.score > 0
-ORDER BY r.score DESC;
+WHERE StoreID = ?;
 `

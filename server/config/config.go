@@ -13,6 +13,7 @@ type Config struct {
 	Api       *ApiConfig       `json:"api" yaml:"api"`
 	Auth      *AuthConfig      `json:"auth" yaml:"auth"`
 	DB        *DBConfig        `json:"db" yaml:"db"`
+	Sphinx    *SphinxConfig    `json:"sphinx" yaml:"sphinx"`
 	Redis     *RedisConfig     `json:"redis" yaml:"redis"`
 	Images    *ImagesConfig    `json:"images" yaml:"images"`
 	Promotion *PromotionConfig `json:"promotion" yaml:"promotion"`
@@ -43,6 +44,11 @@ type DBConfig struct {
 	Password          string `json:"password" yaml:"password"`
 	Schema            string `json:"schema" yaml:"schema"`
 	ConnectTimeoutSec int    `json:"connect_timeout_sec" yaml:"connect_timeout_sec"`
+}
+
+type SphinxConfig struct {
+	Addr  string `json:"addr" yaml:"addr"`
+	Index string `json:"index" yaml:"index"`
 }
 
 type RedisConfig struct {

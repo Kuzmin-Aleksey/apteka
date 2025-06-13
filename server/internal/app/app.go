@@ -15,6 +15,7 @@ import (
 	"server/internal/domain/service/promotion"
 	"server/internal/domain/service/store"
 	"server/internal/infrastructure/integration/image_parser"
+	"server/internal/infrastructure/integration/sphinx"
 	"server/internal/infrastructure/persistence/cache/redis"
 	"server/internal/infrastructure/persistence/mysql"
 	"server/pkg/fs"
@@ -53,13 +54,18 @@ func Run(cfg *config.Config) {
 		l.Fatal(err)
 	}
 
+	sphinxSearcher, err := sphinx.NewSearcher(cfg.Sphinx)
+	if err != nil {
+		l.Fatal("connect to sphinx fail: ", err)
+	}
+
 	productsRepo := mysql.NewProductRepo(txDB)
 	promotionRepo := mysql.NewPromotion(txDB)
 	storesRepo := mysql.NewStoreRepo(txDB)
 	bookingRepo := mysql.NewBookingRepo(txDB)
 	imagesParser := image_parser.NewImagesParser(time.Second * 15)
 
-	productsService := products.NewProductService(productsRepo, storesRepo, bookingRepo)
+	productsService := products.NewProductService(productsRepo, sphinxSearcher, storesRepo, bookingRepo)
 	promotionService := promotion.NewPromotionService(promotionRepo, productsService, l)
 	imagesService := images.NewImagesService(imagesFS, productsRepo, imagesParser, l)
 	storeService := store.NewStoreService(storesRepo, productsRepo)
