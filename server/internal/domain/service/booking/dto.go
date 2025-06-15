@@ -1,6 +1,7 @@
 package booking
 
 import (
+	"server/internal/domain/aggregate"
 	"server/internal/domain/entity"
 )
 
@@ -12,6 +13,6 @@ type CreateBookDTO struct {
 }
 
 type GetBookingResponseDTO struct {
-	entity.Book
+	aggregate.BookWithProducts
 	Delay int `json:"delay"`
 }

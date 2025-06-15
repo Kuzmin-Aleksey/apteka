@@ -83,6 +83,8 @@ func Run(cfg *config.Config) {
 		go imagesService.RunAutoDownloader(cfg.Images.AutoLoadDelay)
 	}
 
+	go bookingService.StartAutoCancel(l)
+
 	handler, err := httpAPI.NewHandler(
 		productsService,
 		promotionService,

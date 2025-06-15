@@ -6,17 +6,19 @@ import (
 	"io"
 	"math"
 	"os"
+	"server/internal/domain/aggregate"
 	"server/internal/domain/entity"
 	"server/pkg/failure"
 	"time"
 )
 
 type BookingRepo interface {
-	Save(ctx context.Context, book *entity.Book) error
+	Save(ctx context.Context, book *aggregate.BookWithProducts) error
 	UpdateStatus(ctx context.Context, bookId int, status string) error
-	GetById(ctx context.Context, bookId int) (*entity.Book, error)
-	GetByIds(ctx context.Context, bookIds []int) ([]entity.Book, error)
-	GetByStore(ctx context.Context, storeId int) ([]entity.Book, error)
+	GetById(ctx context.Context, bookId int) (*aggregate.BookWithProducts, error)
+	GetByIds(ctx context.Context, bookIds []int) ([]aggregate.BookWithProducts, error)
+	GetByStore(ctx context.Context, storeId int) ([]aggregate.BookWithProducts, error)
+	GetActive(ctx context.Context) ([]entity.Book, error)
 	Delete(ctx context.Context, bookId int) error
 }
 
@@ -136,14 +138,16 @@ func (s *BookingService) ToBook(ctx context.Context, storeId int, dto *CreateBoo
 		}
 	}
 
-	book := &entity.Book{
-		StoreId:   storeId,
-		CreatedAt: time.Now(),
-		Status:    entity.BookStatusCreated,
-		Username:  dto.Username,
-		Phone:     dto.Phone,
-		Message:   dto.Message,
-		Products:  dto.Products,
+	book := &aggregate.BookWithProducts{
+		Book: entity.Book{
+			StoreId:   storeId,
+			CreatedAt: time.Now(),
+			Status:    entity.BookStatusCreated,
+			Username:  dto.Username,
+			Phone:     dto.Phone,
+			Message:   dto.Message,
+		},
+		Products: dto.Products,
 	}
 
 	if err := s.repo.Save(ctx, book); err != nil {
@@ -168,8 +172,8 @@ func (s *BookingService) Get(ctx context.Context, bookId int) (*GetBookingRespon
 	}
 
 	return &GetBookingResponseDTO{
-		Book:  *book,
-		Delay: int(math.Round(s.bookingDelay.Hours())),
+		BookWithProducts: *book,
+		Delay:            int(math.Round(s.bookingDelay.Hours())),
 	}, nil
 }
 
@@ -182,14 +186,14 @@ func (s *BookingService) GetByIds(ctx context.Context, bookIds []int) ([]GetBook
 
 	for i := range bookings {
 		resp[i] = GetBookingResponseDTO{
-			Book:  bookings[i],
-			Delay: int(math.Round(s.bookingDelay.Hours())),
+			BookWithProducts: bookings[i],
+			Delay:            int(math.Round(s.bookingDelay.Hours())),
 		}
 	}
 	return resp, nil
 }
 
-func (s *BookingService) GetByStore(ctx context.Context, storeId int) ([]entity.Book, error) {
+func (s *BookingService) GetByStore(ctx context.Context, storeId int) ([]aggregate.BookWithProducts, error) {
 	bookings, err := s.repo.GetByStore(ctx, storeId)
 	if err != nil {
 		return nil, err
@@ -222,4 +226,36 @@ func (s *BookingService) StoreBookingDelay(newDelay time.Duration) error {
 
 func (s *BookingService) GetBookingDelay() time.Duration {
 	return s.bookingDelay
+}
+
+type Logger interface {
+	Println(v ...any)
+}
+
+func (s *BookingService) StartAutoCancel(l Logger) {
+	const delay = time.Minute * 15
+
+	ticker := time.NewTicker(delay)
+	for range ticker.C {
+		func() {
+			ctx, cancel := context.WithTimeout(context.Background(), delay)
+			defer cancel()
+
+			bookings, err := s.repo.GetActive(ctx)
+			if err != nil {
+				l.Println(err)
+				return
+			}
+
+			for _, booking := range bookings {
+				if booking.CreatedAt.Add(s.bookingDelay).Before(time.Now()) {
+					if err := s.repo.UpdateStatus(ctx, booking.Id, entity.BookStatusRejected); err != nil {
+						l.Println("cancel", booking.Id, "failed: ", err)
+						continue
+					}
+				}
+			}
+		}()
+	}
+
 }

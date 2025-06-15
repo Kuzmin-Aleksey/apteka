@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"golang.org/x/net/context"
+	"server/internal/domain/aggregate"
 	"server/internal/domain/entity"
 	"server/pkg/failure"
 )
@@ -18,7 +19,7 @@ func NewBookingRepo(db DB) *BookingRepo {
 	}
 }
 
-func (r *BookingRepo) Save(ctx context.Context, book *entity.Book) error {
+func (r *BookingRepo) Save(ctx context.Context, book *aggregate.BookWithProducts) error {
 	tx, err := r.Begin()
 	if err != nil {
 		return failure.NewInternalError(err.Error())
@@ -58,8 +59,8 @@ func (r *BookingRepo) UpdateStatus(ctx context.Context, bookId int, status strin
 	return nil
 }
 
-func (r *BookingRepo) GetById(ctx context.Context, bookId int) (*entity.Book, error) {
-	var book entity.Book
+func (r *BookingRepo) GetById(ctx context.Context, bookId int) (*aggregate.BookWithProducts, error) {
+	var book aggregate.BookWithProducts
 
 	if err := r.QueryRowContext(ctx, "SELECT * FROM booking WHERE id=?", bookId).Scan(&book.Id, &book.StoreId, &book.CreatedAt, &book.Status, &book.Username, &book.Phone, &book.Message); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -77,8 +78,8 @@ func (r *BookingRepo) GetById(ctx context.Context, bookId int) (*entity.Book, er
 	return &book, nil
 }
 
-func (r *BookingRepo) GetByIds(ctx context.Context, ids []int) ([]entity.Book, error) {
-	books := make([]entity.Book, 0, len(ids))
+func (r *BookingRepo) GetByIds(ctx context.Context, ids []int) ([]aggregate.BookWithProducts, error) {
+	books := make([]aggregate.BookWithProducts, 0, len(ids))
 
 	if len(ids) == 0 {
 		return books, nil
@@ -95,7 +96,7 @@ func (r *BookingRepo) GetByIds(ctx context.Context, ids []int) ([]entity.Book, e
 	defer rows.Close()
 
 	for rows.Next() {
-		var book entity.Book
+		var book aggregate.BookWithProducts
 		if err := rows.Scan(&book.Id, &book.StoreId, &book.CreatedAt, &book.Status, &book.Username, &book.Phone, &book.Message); err != nil {
 			return nil, failure.NewInternalError(err.Error())
 		}
@@ -113,8 +114,8 @@ func (r *BookingRepo) GetByIds(ctx context.Context, ids []int) ([]entity.Book, e
 	return books, nil
 }
 
-func (r *BookingRepo) GetByStore(ctx context.Context, storeId int) ([]entity.Book, error) {
-	var books []entity.Book
+func (r *BookingRepo) GetByStore(ctx context.Context, storeId int) ([]aggregate.BookWithProducts, error) {
+	var books []aggregate.BookWithProducts
 
 	rows, err := r.QueryContext(ctx, "SELECT * FROM booking WHERE store_id=?", storeId)
 	if err != nil {
@@ -123,7 +124,7 @@ func (r *BookingRepo) GetByStore(ctx context.Context, storeId int) ([]entity.Boo
 	defer rows.Close()
 
 	for rows.Next() {
-		var book entity.Book
+		var book aggregate.BookWithProducts
 		if err := rows.Scan(&book.Id, &book.StoreId, &book.CreatedAt, &book.Status, &book.Username, &book.Phone, &book.Message); err != nil {
 			return nil, failure.NewInternalError(err.Error())
 		}
@@ -138,6 +139,26 @@ func (r *BookingRepo) GetByStore(ctx context.Context, storeId int) ([]entity.Boo
 
 	}
 
+	return books, nil
+}
+
+func (r *BookingRepo) GetActive(ctx context.Context) ([]entity.Book, error) {
+	books := make([]entity.Book, 0)
+	rows, err := r.QueryContext(ctx, "SELECT * FROM booking WHERE booking.status NOT IN (?, ?)", entity.BookStatusReceive, entity.BookStatusRejected)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return books, nil
+		}
+		return nil, failure.NewInternalError(err.Error())
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var book entity.Book
+		if err := rows.Scan(&book.Id, &book.StoreId, &book.CreatedAt, &book.Status, &book.Username, &book.Phone, &book.Message); err != nil {
+			return nil, failure.NewInternalError(err.Error())
+		}
+		books = append(books, book)
+	}
 	return books, nil
 }
 
