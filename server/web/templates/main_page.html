@@ -150,6 +150,10 @@
             font-size: large;
         }
 
+        #productModalImage {
+            max-height: 450px;
+        }
+
         /* Плавающая кнопка корзины для мобильных */
         .floating-cart-btn {
             position: fixed;
@@ -293,10 +297,13 @@
                         </div>
                         <div class="modal-body">
                             <div class="row">
-                                <div class="col-md-6">
-                                    <img id="productModalImage"
-                                         src="/static/img/no_product.webp"
-                                         class="img-fluid rounded mb-3" alt="Изображение товара">
+                                <div class="col-md-6 d-flex justify-content-center">
+                                    <div>
+                                        <img id="productModalImage"
+                                             src="/static/img/no_product.webp"
+                                             class="img-fluid rounded mb-3" alt="Изображение товара">
+                                    </div>
+
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
