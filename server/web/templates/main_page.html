@@ -100,6 +100,15 @@
             top: 0;
         }
 
+        .search-box .loader {
+            display: flex;
+            align-items: center;
+            position: absolute;
+            right: 0;
+            top: 0;
+            padding: 3px 5px;
+        }
+
         .out-of-stock {
             opacity: 0.6;
             position: relative;
@@ -160,7 +169,7 @@
             bottom: 20px;
             right: 20px;
             z-index: 1000;
-            display: none; /* По умолчанию скрыта */
+            display: none;/
         }
 
         .floating-cart-btn .btn {
@@ -171,12 +180,6 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-
-        .floating-cart-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
         }
 
         /* button up */
@@ -206,13 +209,30 @@
             display: none;
         }
 
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #FFF;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
         @media (hover: hover) and (pointer: fine) {
             .btn-up:hover {
                 background-color: #512da8;
             }
         }
-
-
 
 
         @media (min-width: 992px) {
@@ -228,11 +248,6 @@
                 height: 30px;
             }
 
-            .floating-cart-btn {
-                display: block; /* Видна только на мобильных */
-            }
-
-
             .d-lg-none .text-white {
                 font-size: 0.8rem;
                 white-space: nowrap;
@@ -242,7 +257,7 @@
             }
 
             body {
-                padding-bottom: 80px; /* Больше места для кнопки */
+                padding-bottom: 80px;
             }
         }
 
@@ -253,20 +268,22 @@
 {{template "navbar" .}}
 
 
-<!-- Основное содержимое -->
 <div class="container my-4">
     <div class="row">
-        <!-- Блок поиска и товаров -->
         <div class="col-lg-10 m-auto">
-            <!-- Блок поиска -->
             <div class="search-box mb-4">
                 <input type="text" class="form-control pe-5" id="searchInput" placeholder="Поиск лекарств и товаров...">
                 <button class="btn btn-primary" id="searchBtn">
                     <i class="fas fa-search"></i>
                 </button>
+                <div class="bg-primary rounded loader d-none">
+                    <div class="spinner-border text-white" role="status">
+                        <span class="sr-only"></span>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- Результаты поиска (изначально скрыт) -->
             <div id="searchResults" class="d-none">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4>Результаты поиска</h4>
@@ -274,20 +291,17 @@
                 </div>
 
                 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4" id="searchResultsContainer">
-                    <!-- Здесь будут карточки найденных товаров -->
+
                 </div>
             </div>
 
-            <!-- Пагинация -->
             <div class="d-flex justify-content-center mt-4">
                 <nav aria-label="Page navigation">
                     <ul class="pagination" id="pagination">
-                        <!-- Пагинация будет генерироваться динамически -->
                     </ul>
                 </nav>
             </div>
 
-            <!-- Модальное окно с детальной информацией о товаре -->
             <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
@@ -348,8 +362,6 @@
 
             <h4 class="mb-3">Акции</h4>
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4" id="promotionsContainer">
-                <!-- Акции будут загружаться здесь -->
-
             </div>
         </div>
     </div>
@@ -357,7 +369,7 @@
 
 <div class="btn-up btn-up_hide"></div>
 
-<!-- Плавающая кнопка корзины для мобильных
+<!--
 <div class="floating-cart-btn">
     <button class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
         <i class="fas fa-shopping-cart fa-lg"></i>
@@ -577,6 +589,16 @@
         modal.show();
     }
 
+    function searchLoading() {
+        document.querySelector("#searchBtn").classList.add("d-none");
+        document.querySelector(".loader").classList.remove("d-none");
+    }
+
+    function searchLoadingStop() {
+        document.querySelector("#searchBtn").classList.remove("d-none");
+        document.querySelector(".loader").classList.add("d-none");
+    }
+
     function LoadPromotion() {
         const promotionsContainer = document.getElementById("promotionsContainer");
 
@@ -691,14 +713,19 @@
         const searchBtn = document.getElementById('searchBtn');
         const searchInput = document.getElementById('searchInput');
 
-        // Обработчик поиска
         searchBtn.addEventListener('click', function() {
             const searchTerm = searchInput.value.trim();
+            if (searchTerm === "") {
+                //return;
+            }
+
+            searchLoading();
 
             let xhr = new XMLHttpRequest();
 
             xhr.responseType = "json"
             xhr.onload = () => {
+                searchLoadingStop();
                 if (!CheckCode(xhr)) {
                     return
                 }
