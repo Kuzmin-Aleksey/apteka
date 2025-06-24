@@ -114,7 +114,7 @@ func (w *Window) updateItem(i widget.ListItemID, item fyne.CanvasObject) {
 	}
 
 	label := item.(*fyne.Container).Objects[1].(*widget.Label)
-	label.SetText(fmt.Sprintf("№%d %s", w.bookings[i].Id, w.bookings[i].CreatedAt.Format(time.DateTime)))
+	label.SetText(fmt.Sprintf("№%d %s", w.bookings[i].Id, getStatusDisplayName(w.bookings[i].Status)))
 
 	delBtn := item.(*fyne.Container).Objects[3].(*widget.Button)
 
