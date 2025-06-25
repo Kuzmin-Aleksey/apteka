@@ -6,3 +6,4 @@
 **/*.log
 **/logs/*
 **/media/prod_images/*
+store_client/fyne_metadata_init.go

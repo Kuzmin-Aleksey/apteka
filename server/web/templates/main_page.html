@@ -501,6 +501,7 @@
         document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                btn.innerText = "Добавлено"
                 const productId = btn.dataset.id;
                 const product = products.find(p => p.id == productId);
                 if (product) addToCart(product, 1);
@@ -515,9 +516,6 @@
         if (e.target.tagName === 'A') {
             const page = parseInt(e.target.dataset.page);
             if (!isNaN(page)) {
-                // Сохраняем текущие результаты поиска
-                const searchTerm = document.getElementById('searchInput').value.trim()
-
                 displaySearchResults(products, page);
             }
         }

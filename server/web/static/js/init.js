@@ -47,7 +47,9 @@ function getStoreInfo(callback) {
             return;
         }
 
-        stores = JSON.parse(xhr.response);
+        let resp = JSON.parse(xhr.response);
+
+        stores = resp? resp : [];
 
         if (storeId) {
             stores.forEach(s => {
