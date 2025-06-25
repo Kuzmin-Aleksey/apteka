@@ -333,7 +333,7 @@
 
   function saveCart() {
     let exp = new Date();
-    exp.setMonth(exp.getMonth()+1);
+    exp.setFullYear(exp.getFullYear()+1);
     setCookie("cart", JSON.stringify(cartItems), {path: "/", expires: exp});
   }
 

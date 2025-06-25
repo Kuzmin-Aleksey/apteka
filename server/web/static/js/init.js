@@ -8,7 +8,9 @@ function getStoreId() {
 }
 
 function saveStoreId(storeId) {
-    setCookie("store", storeId, {path: "/"})
+    let exp = new Date();
+    exp.setFullYear(exp.getFullYear()+1);
+    setCookie("store", storeId, {path: "/", expires: exp})
 }
 
 

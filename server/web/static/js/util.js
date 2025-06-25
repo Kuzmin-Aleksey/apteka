@@ -48,13 +48,17 @@ function addBooking(booking_id) {
     let bookings = [booking_id]
 
     bookings.push(...oldBookings)
-    setCookie("bookings", JSON.stringify(bookings), {path: "/"});
+    let exp = new Date();
+    exp.setFullYear(exp.getFullYear()+1);
+    setCookie("bookings", JSON.stringify(bookings), {path: "/",  expires: exp});
 }
 
 function deleteBooking(booking_id) {
     let bookings = getBookings()
     bookings = bookings.filter(booking => booking !== booking_id)
-    setCookie("bookings", JSON.stringify(bookings), {path: "/"});
+    let exp = new Date();
+    exp.setFullYear(exp.getFullYear()+1);
+    setCookie("bookings", JSON.stringify(bookings), {path: "/", expires: exp});
 }
 
 
