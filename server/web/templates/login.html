@@ -55,9 +55,9 @@
 <main class="form-signin w-100 m-auto">
     <form name="login-form">
         <div class="d-flex align-items-center mb-3">
-            <h1 class="h3 fw-normal">Login</h1>
+            <h1 class="h3 fw-normal">Вход </h1>
             <div class="text-right">
-                <img class="mb-4" src="/static/media/favicon.ico"  alt="" height="57" style="width: auto">
+                <img class="mb-4" src="{{ .Config.Logo }}"  alt="" height="57" style="width: auto">
             </div>
         </div>
 
@@ -70,34 +70,31 @@
 
             <label for="floatingPassword">Пароль</label>
             <i class="bi bi-eye-slash" id="togglePassword"></i>
-
         </div>
-
-
         <div class="form-check text-start my-3">
-            <input name="remember-me" class="form-check-input" type="checkbox" value="1" id="flexCheckDefault">
+            <input name="remember-me" class="form-check-input" type="checkbox" value="1" id="flexCheckDefault" checked>
             <label class="form-check-label" for="flexCheckDefault">
                 Запомнить меня
             </label>
         </div>
         <button class="btn btn-primary w-100 py-2" type="submit">Войти</button>
-        <p class="text-danger">{{ . }}</p>
-        <p class="mt-5 mb-3 text-body-secondary">© 2024</p>
+        <p class="text-danger" id="error-label"></p>
     </form>
 </main>
 <script>
     OnUnauthorized = function(msg) {
-        console.error(msg)
+        console.error(msg);
     }
 
     OnError = function(code, err) {
-        console.error(code, err)
-        alert(`Ошибка ${code}`)
+        console.error(code, err);
+        alert(`Ошибка ${code}`);
     }
 
-
+    const errorLabel = document.getElementById("error-label");
     const togglePassword = document.getElementById('togglePassword');
     const password = document.getElementById("floatingPassword");
+
     togglePassword.onclick = () => {
         const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
         password.setAttribute('type', type);
@@ -106,63 +103,72 @@
 
     const form = document.querySelector('form[name="login-form"]')
     form.addEventListener('submit', e => {
-        e.preventDefault()
-        const data = new FormData(form)
-        let login = data.get("login")
-        let password = data.get("pass")
+        e.preventDefault();
+        const data = new FormData(form);
+        let login = data.get("login");
+        let password = data.get("pass");
+        let rememberMe = data.get("remember-me");
 
         if (login === "" || password === "") {
-            console.error("empty fields")
+            console.error("empty fields");
             return
         }
 
-        Login(login, password)
+        Login(login, password, !!rememberMe);
     })
 
-    function Login(username, password) {
+    function Login(username, password, rememberMe) {
         let xhr = new XMLHttpRequest();
-        xhr.responseType = "json"
+        xhr.responseType = "json";
+        errorLabel.innerText = "";
 
         xhr.onload = () => {
             if (xhr.status !== StatusOk) {
-                let err = xhr.response !== null?  xhr.response["error"] : ""
-                console.error(err)
+                let err = xhr.response !== null?  xhr.response["error"] : "";
+                console.error(err);
                 if (xhr.status === StatusUnauthorized) {
-                    alert("Неверный логин или пароль");
+                    errorLabel.innerText = "Неверный логин или пароль";
                 } else {
                     alert(`Ошибка ${xhr.status}`);
                 }
+                return
             }
-            let token = xhr.getResponseHeader("Token")
+            let token = xhr.getResponseHeader("Token");
 
-            let exp = new Date();
-            exp.setMonth(exp.getMonth()+1);
-            setCookie("token", token, {path: "/", expires: exp});
+            if (rememberMe) {
+                let exp = new Date();
+                exp.setMonth(exp.getMonth()+1);
+                setCookie("token", token, {path: "/", expires: exp});
+            } else {
+                setCookie("token", token, {path: "/"});
+            }
+
+
 
             location.replace("/admin/stores");
         }
 
-        xhr.open("POST", `/api/auth/login?username=${username}&password=${password}`)
+        xhr.open("POST", `/api/auth/login?username=${username}&password=${password}`);
 
         let token = getCookie("token");
         if (token !== "" && token !== undefined) {
             xhr.setRequestHeader("Authorization", "Bearer " + token);
         }
 
-        xhr.send()
+        xhr.send();
     }
 
 
     let xhr = new XMLHttpRequest();
-    xhr.responseType = "json"
+    xhr.responseType = "json";
     xhr.onload = () => {
         if (xhr.status === 200) {
             location.replace("/admin/stores");
         }
     }
-    xhr.open("GET", "/api/auth/check-token")
-    withAuth(xhr)
-    xhr.send()
+    xhr.open("GET", "/api/auth/check-token");
+    withAuth(xhr);
+    xhr.send();
 
 </script>
 </body>
