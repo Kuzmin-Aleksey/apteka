@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"html/template"
 	"net/http"
+	"server/config"
 	"server/pkg/errcodes"
 	"server/pkg/failure"
+	"strings"
 )
 
 func (h *Handler) writeJSON(w http.ResponseWriter, v any) {
@@ -35,16 +37,36 @@ func (h *Handler) writeError(w http.ResponseWriter, err error) {
 	}
 }
 
+type TemplateData struct {
+	Config *config.WebConfig
+}
+
+var templatesCache = make(map[string]*template.Template)
+
 func (h *Handler) handleTemplate(tmpPath ...string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tmp, err := template.ParseFiles(tmpPath...)
-		if err != nil {
-			h.writeError(w, failure.NewInternalError("parse template: "+err.Error()))
-			return
+		templateCacheKey := strings.Join(tmpPath, "&")
+
+		var tmp *template.Template
+		if h.apiCfg.CacheTemplate {
+			tmp = templatesCache[templateCacheKey]
+		}
+		if tmp == nil {
+			var err error
+			tmp, err = template.ParseFiles(tmpPath...)
+			if err != nil {
+				h.writeError(w, failure.NewInternalError("parse template: "+err.Error()))
+				return
+			}
+			if h.apiCfg.CacheTemplate {
+				templatesCache[templateCacheKey] = tmp
+			}
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		if err := tmp.Execute(w, nil); err != nil {
+		if err := tmp.Execute(w, &TemplateData{
+			Config: h.webCfg,
+		}); err != nil {
 			h.writeError(w, failure.NewInternalError("execute template: "+err.Error()))
 			return
 		}

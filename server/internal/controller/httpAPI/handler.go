@@ -14,7 +14,6 @@ import (
 	"server/internal/domain/service/products"
 	"server/internal/domain/service/promotion"
 	"server/internal/domain/service/store"
-	"time"
 )
 
 type Logger interface {
@@ -24,6 +23,7 @@ type Logger interface {
 
 type Handler struct {
 	router *mux.Router
+	webCfg *config.WebConfig
 
 	products  *products.ProductService
 	promotion *promotion.PromotionService
@@ -36,8 +36,7 @@ type Handler struct {
 	info *HttpLogger
 	l    Logger
 
-	ApiKey  string
-	Timeout time.Duration
+	apiCfg *config.ApiConfig
 }
 
 func NewHandler(
@@ -50,7 +49,8 @@ func NewHandler(
 	imagesFS fs.FS,
 
 	l Logger,
-	cfg *config.ApiConfig,
+	webCfg *config.WebConfig,
+	apiCfg *config.ApiConfig,
 
 ) (*Handler, error) {
 	requestsLogs, err := os.OpenFile(filepath.Join("logs", "requests.log.csv"), os.O_WRONLY|os.O_CREATE|os.O_APPEND, os.ModePerm)
@@ -66,8 +66,8 @@ func NewHandler(
 		auth:      auth,
 		booking:   booking,
 		imagesFS:  imagesFS,
-		ApiKey:    cfg.ApiKey,
-		Timeout:   time.Duration(cfg.HandleTimeoutSec) * time.Second,
+		webCfg:    webCfg,
+		apiCfg:    apiCfg,
 		info:      NewHttpLogger(requestsLogs),
 		l:         l,
 	}

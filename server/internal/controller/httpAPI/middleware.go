@@ -56,7 +56,7 @@ func (h *Handler) MwWithApiKey(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		key := typeAndKey[1]
-		if key != h.ApiKey {
+		if key != h.apiCfg.ApiKey {
 			h.writeError(w, failure.NewUnauthorizedError("invalid api key"))
 			return
 		}
@@ -97,7 +97,7 @@ func (h *Handler) MwAuth(next http.HandlerFunc) http.HandlerFunc {
 
 func (h *Handler) MwWithTimeout(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), h.Timeout)
+		ctx, cancel := context.WithTimeout(r.Context(), time.Duration(h.apiCfg.HandleTimeoutSec)*time.Second)
 		defer cancel()
 
 		next.ServeHTTP(w, r.WithContext(ctx))

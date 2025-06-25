@@ -15,6 +15,7 @@ type Config struct {
 	DB        *DBConfig        `json:"db" yaml:"db"`
 	Sphinx    *SphinxConfig    `json:"sphinx" yaml:"sphinx"`
 	Redis     *RedisConfig     `json:"redis" yaml:"redis"`
+	Web       *WebConfig       `json:"web" yaml:"web"`
 	Images    *ImagesConfig    `json:"images" yaml:"images"`
 	Promotion *PromotionConfig `json:"promotion" yaml:"promotion"`
 }
@@ -30,6 +31,7 @@ type HttpConfig struct {
 type ApiConfig struct {
 	ApiKey           string `json:"api_key" yaml:"api_key"`
 	HandleTimeoutSec int    `json:"handle_timeout_sec" yaml:"handle_timeout_sec"`
+	CacheTemplate    bool   `json:"cache_template" yaml:"cache_template"`
 }
 
 type AuthConfig struct {
@@ -55,6 +57,12 @@ type RedisConfig struct {
 	Host     string `json:"host" yaml:"host"`
 	Password string `json:"password" yaml:"password"`
 	DB       int    `json:"db" yaml:"db"`
+}
+
+type WebConfig struct {
+	Title   string `json:"title" yaml:"title"`
+	Logo    string `json:"logo" yaml:"logo"`
+	LogoMin string `json:"logo_min" yaml:"logo_min"`
 }
 
 type PromotionConfig struct {

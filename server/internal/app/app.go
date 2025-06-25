@@ -94,6 +94,7 @@ func Run(cfg *config.Config) {
 		bookingService,
 		imagesFS,
 		l,
+		cfg.Web,
 		cfg.Api,
 	)
 	if err != nil {
