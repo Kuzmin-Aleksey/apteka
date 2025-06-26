@@ -1,6 +1,6 @@
 create table products
 (
-    Code        int                                                  not null,
+    Code        bigint                                               not null,
     StoreID     int                                                  not null,
     GTIN        bigint unsigned              default '0'             not null,
     Name        varchar(250) charset utf8mb4 default '!БЕЗ НАЗВАНИЯ' not null,
