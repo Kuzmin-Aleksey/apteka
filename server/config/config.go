@@ -60,9 +60,10 @@ type RedisConfig struct {
 }
 
 type WebConfig struct {
-	Title   string `json:"title" yaml:"title"`
-	Logo    string `json:"logo" yaml:"logo"`
-	LogoMin string `json:"logo_min" yaml:"logo_min"`
+	Title       string   `json:"title" yaml:"title"`
+	Logo        string   `json:"logo" yaml:"logo"`
+	LogoMin     string   `json:"logo_min" yaml:"logo_min"`
+	StaticFiles []string `json:"static_files" yaml:"static_files"`
 }
 
 type PromotionConfig struct {

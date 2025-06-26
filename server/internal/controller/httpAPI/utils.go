@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"net/http"
+	"os"
 	"server/config"
 	"server/pkg/errcodes"
 	"server/pkg/failure"
@@ -88,4 +89,27 @@ func getErrorStatus(err error) (errcodes.Code, int) {
 	default:
 		return errcodes.ErrUnknown, http.StatusInternalServerError
 	}
+}
+
+func (h *Handler) handleFile(path string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		f, err := os.Open(path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+			}
+			h.l.Printf("serve %s error %s", path, err.Error())
+			return
+		}
+		defer f.Close()
+
+		fi, err := f.Stat()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			h.l.Printf("serve %s error %s", path, err.Error())
+			return
+		}
+
+		http.ServeContent(w, r, fi.Name(), fi.ModTime(), f)
+	})
 }

@@ -94,6 +94,10 @@ func (h *Handler) init() error {
 	h.router.PathPrefix("/image/").Handler(http.StripPrefix("/image", http.FileServer(http.FS(h.imagesFS))))
 	h.router.PathPrefix("/static/").Handler(http.StripPrefix("/static", http.FileServer(http.Dir("./web/static/"))))
 
+	for _, path := range h.webCfg.StaticFiles {
+		h.router.Handle("/"+filepath.Base(path), h.handleFile(path))
+	}
+
 	h.router.HandleFunc("/", h.HandleMainPage).Methods(get)
 	h.router.HandleFunc("/stores", h.HandleStoresPage).Methods(get)
 	h.router.HandleFunc("/bookings", h.HandleBookingsPage).Methods(get)
