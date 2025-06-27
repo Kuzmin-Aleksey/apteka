@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"golang.org/x/net/context"
 	"io"
-	"log"
 	"server/internal/domain/entity"
 	"server/internal/domain/service/promotion/promotion_parser"
+	"server/pkg/contextx"
 	"server/pkg/failure"
+	"server/pkg/logx"
 	"server/pkg/tx_manager"
 	"time"
 )
@@ -24,38 +25,21 @@ type ProductsRepo interface {
 	FindByIdS(ctx context.Context, storeId int, ids []int) (map[int]entity.Product, error)
 }
 
-type Logger interface {
-	Println(v ...any)
-	Printf(format string, v ...any)
-}
-
 type PromotionService struct {
-	repo              PromotionRepo
-	productsRepo      ProductsRepo
-	l                 Logger
-	shutdown          chan struct{}
-	autoDeleteRunning bool
+	repo         PromotionRepo
+	productsRepo ProductsRepo
 }
 
-func NewPromotionService(repo PromotionRepo, products ProductsRepo, l Logger) *PromotionService {
-	if l == nil {
-		l = log.Default()
-	}
+func NewPromotionService(repo PromotionRepo, products ProductsRepo) *PromotionService {
 	m := &PromotionService{
 		repo:         repo,
 		productsRepo: products,
-		l:            l,
-		shutdown:     make(chan struct{}),
 	}
 	return m
 }
 
-func (s *PromotionService) RunAutoDeletion() {
-	s.autoDeleteRunning = true
-
-	defer func() {
-		s.autoDeleteRunning = false
-	}()
+func (s *PromotionService) RunAutoDeletion(ctx context.Context) {
+	l := contextx.GetLoggerOrDefault(ctx)
 
 	for {
 		now := time.Now()
@@ -63,27 +47,16 @@ func (s *PromotionService) RunAutoDeletion() {
 		ticker := time.Tick(nextUpdate.Sub(now))
 
 		select {
-		case <-s.shutdown:
+		case <-ctx.Done():
+			l.Info("auto delete promotion stop", logx.Error(ctx.Err()))
 			return
 		case <-ticker:
 		}
 
 		if err := s.repo.DeleteAll(context.Background()); err != nil {
-			s.l.Println("failed to delete all promotions: ", err)
+			l.Error("delete all products failed", logx.Error(err))
 		}
 	}
-}
-
-func (s *PromotionService) Shutdown(ctx context.Context) error {
-	if s.autoDeleteRunning {
-		select {
-		case s.shutdown <- struct{}{}:
-			return nil
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
-	return nil
 }
 
 func (s *PromotionService) UploadPromotionDocument(ctx context.Context, doc io.Reader) ([]entity.Promotion, error) {

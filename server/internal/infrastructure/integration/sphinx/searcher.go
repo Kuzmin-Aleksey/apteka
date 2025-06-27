@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"golang.org/x/net/context"
-	"server/config"
+	"server/internal/config"
 	"server/internal/domain/aggregate"
 	"strings"
 )

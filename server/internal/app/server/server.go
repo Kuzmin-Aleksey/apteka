@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"server/config"
+	"server/internal/config"
 	"time"
 )
 

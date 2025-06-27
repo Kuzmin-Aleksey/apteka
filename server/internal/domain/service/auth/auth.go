@@ -3,7 +3,7 @@ package auth
 import (
 	"github.com/google/uuid"
 	"golang.org/x/net/context"
-	"server/config"
+	"server/internal/config"
 	"server/pkg/failure"
 	"time"
 )

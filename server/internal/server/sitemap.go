@@ -1,12 +1,24 @@
-package httpAPI
+package server
 
 import (
 	"encoding/xml"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
+	"server/internal/domain/service/store"
+	"server/pkg/contextx"
+	"server/pkg/logx"
 	"time"
 )
+
+type SitemapGenerator struct {
+	store *store.StoreService
+}
+
+func NewSitemapGenerator(store *store.StoreService) *SitemapGenerator {
+	return &SitemapGenerator{store: store}
+}
 
 type sitemap struct {
 	XMLName xml.Name     `xml:"urlset"`
@@ -20,7 +32,10 @@ type siteMapUrl struct {
 	Priority float32   `xml:"priority"`
 }
 
-func (h *Handler) handleSitemap(w http.ResponseWriter, r *http.Request) {
+func (g *SitemapGenerator) handleSitemap(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := contextx.GetLoggerOrDefault(ctx)
+
 	w.Header().Set("Content-Type", "text/xml")
 
 	proto := "http"
@@ -50,37 +65,37 @@ func (h *Handler) handleSitemap(w http.ResponseWriter, r *http.Request) {
 	var templatePartsLastMod time.Time
 
 	for _, templatePart := range templateParts {
-		f, err := os.Stat(templatePart)
+		fileInfo, err := os.Stat(templatePart)
 		if err != nil {
-			h.l.Printf("reading file (%s) : %s", templatePart, err.Error())
+			l.Error("generate sitemap", logx.Error(fmt.Errorf("get file info: %w", err)), slog.String("file", templatePart))
 			continue
 		}
 
-		if f.ModTime().After(templatePartsLastMod) {
-			templatePartsLastMod = f.ModTime()
+		if fileInfo.ModTime().After(templatePartsLastMod) {
+			templatePartsLastMod = fileInfo.ModTime()
 		}
 	}
 
-	stores, err := h.store.GetAll(r.Context())
+	stores, err := g.store.GetAll(ctx)
 	if err != nil {
-		h.l.Println(err.Error())
+		l.Error("generate sitemap", logx.Error(fmt.Errorf("get stores: %w", err)))
 		return
 	}
 
-	for _, store := range stores {
-		url := fmt.Sprintf("/?store=%d", store.Id)
+	for _, st := range stores {
+		url := fmt.Sprintf("/?store=%d", st.Id)
 		urlFiles[url] = "web/templates/main_page.html"
 		priorityMap[url] = 1
 	}
 
 	for url, file := range urlFiles {
-		f, err := os.Stat(file)
+		fileInfo, err := os.Stat(file)
 		if err != nil {
-			h.l.Printf("reading file (%s) : %s", file, err.Error())
+			l.Error("generate sitemap", logx.Error(fmt.Errorf("get file info: %w", err)), slog.String("file", file))
 			continue
 		}
 
-		lastMod := f.ModTime()
+		lastMod := fileInfo.ModTime()
 		if lastMod.Before(templatePartsLastMod) {
 			lastMod = templatePartsLastMod
 		}
@@ -96,7 +111,7 @@ func (h *Handler) handleSitemap(w http.ResponseWriter, r *http.Request) {
 	enc := xml.NewEncoder(w)
 	enc.Indent("", "  ")
 	if err := enc.Encode(sm); err != nil {
-		h.l.Println(err.Error())
+		l.Error("generate sitemap", logx.Error(fmt.Errorf("encode xml: %w", err)), slog.Any("sitemap", sm))
 	}
 
 }

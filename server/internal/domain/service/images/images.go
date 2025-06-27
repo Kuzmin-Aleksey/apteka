@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"golang.org/x/net/context"
 	"io"
-	"log"
+	"log/slog"
 	"server/internal/domain/entity"
+	"server/pkg/contextx"
+	"server/pkg/logx"
 	"sync"
 	"time"
 )
@@ -25,17 +27,12 @@ type ProductGetter interface {
 	GetAll(ctx context.Context) ([]entity.Product, error)
 }
 
-type Logger interface {
-	Printf(format string, v ...any)
-}
-
 type ProgressFunc func(int8)
 
 type ImagesService struct {
 	repo           ImagesRepo
 	products       ProductGetter
 	parser         ImageParser
-	l              Logger
 	lastDownloadAt time.Time
 	statCache      *statCache
 	IsLoading      bool
@@ -46,35 +43,40 @@ type ImagesService struct {
 	CurrentProgress int8
 }
 
-func NewImagesService(repo ImagesRepo, products ProductGetter, parser ImageParser, l Logger) *ImagesService {
+func NewImagesService(repo ImagesRepo, products ProductGetter, parser ImageParser) *ImagesService {
 	s := &ImagesService{
 		repo:          repo,
 		parser:        parser,
 		products:      products,
-		l:             l,
 		stopLoadingCh: make(chan struct{}),
 	}
 
 	return s
 }
 
-func (s *ImagesService) RunAutoDownloader(delay time.Duration) {
+func (s *ImagesService) RunAutoDownloader(ctx context.Context, delay time.Duration) {
 	const op = "ImagesService AutoDownloader"
+	l := contextx.GetLoggerOrDefault(ctx)
 	time.Sleep(time.Second * 3)
 
 	ticker := time.NewTicker(delay)
 
 	for {
 		func() {
-			ctx, cancel := context.WithTimeout(context.Background(), delay)
+			ctx, cancel := context.WithTimeout(ctx, delay)
 			defer cancel()
 
 			if err := s.LoadImages(ctx); err != nil {
-				s.l.Printf("%s - %s", op, err)
+				l.Error(op, logx.Error(err))
 			}
 		}()
 
-		<-ticker.C
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			l.Info("stop auto downloader", logx.Error(ctx.Err()))
+			return
+		}
 	}
 }
 
@@ -85,6 +87,8 @@ func (s *ImagesService) CheckImageExist(prodId int) bool {
 func (s *ImagesService) LoadImages(ctx context.Context) error {
 	s.initLoadingMu.Lock()
 	defer s.initLoadingMu.Unlock()
+
+	l := contextx.GetLoggerOrDefault(ctx)
 
 	if s.IsLoading {
 		return nil
@@ -115,25 +119,25 @@ func (s *ImagesService) LoadImages(ctx context.Context) error {
 		defer func() {
 			s.CurrentProgress = 0
 			s.IsLoading = false
-			log.Printf("loaded %d images", count)
+			l.Info(fmt.Sprintf("loaded %d images", count))
 		}()
 
 		for _, prod := range productsToLoad {
 			i++
 			select {
 			case <-ctx.Done():
-				s.l.Printf("load images failed, %s", ctx.Err())
+				l.Error("load images failed", logx.Error(ctx.Err()))
 				return
 			case <-s.stopLoadingCh:
-				s.l.Printf("loading stoped")
+				l.Info("loading stopped")
 				return
 			default:
 			}
 
 			if err := s.LoadImage(ctx, prod); err != nil {
-				s.l.Printf("failed load image for prod (code_stu <%d> gtin <%d> name <%s>): %s", prod.CodeSTU, prod.GTIN, prod.Name, err.Error())
+				l.Warn("failed load image", logx.Error(err), slog.Int("code_stu", prod.CodeSTU), slog.Uint64("gtin", prod.GTIN), slog.String("name", prod.Name))
 			} else {
-				s.l.Printf("loaded image for prod (code_stu <%d> gtin <%d> name <%s>)", prod.CodeSTU, prod.GTIN, prod.Name)
+				l.Info("loaded image", slog.Int("code_stu", prod.CodeSTU), slog.Uint64("gtin", prod.GTIN), slog.String("name", prod.Name))
 				count++
 			}
 

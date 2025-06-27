@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"golang.org/x/net/context"
 	"io"
+	"log/slog"
 	"math"
 	"os"
 	"server/internal/domain/aggregate"
 	"server/internal/domain/entity"
+	"server/pkg/contextx"
 	"server/pkg/failure"
+	"server/pkg/logx"
 	"time"
 )
 
@@ -228,29 +231,35 @@ func (s *BookingService) GetBookingDelay() time.Duration {
 	return s.bookingDelay
 }
 
-type Logger interface {
-	Println(v ...any)
-}
-
-func (s *BookingService) StartAutoCancel(l Logger) {
+func (s *BookingService) StartAutoCancel(ctx context.Context) {
 	const delay = time.Minute * 15
 
+	l := contextx.GetLoggerOrDefault(ctx)
+
 	ticker := time.NewTicker(delay)
-	for range ticker.C {
+	for {
+
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			l.Info("stop booking auto cancel", logx.Error(ctx.Err()))
+			return
+		}
+
 		func() {
 			ctx, cancel := context.WithTimeout(context.Background(), delay)
 			defer cancel()
 
 			bookings, err := s.repo.GetActive(ctx)
 			if err != nil {
-				l.Println(err)
+				l.Error("failed to get active bookings", logx.Error(err))
 				return
 			}
 
 			for _, booking := range bookings {
 				if booking.CreatedAt.Add(s.bookingDelay).Before(time.Now()) {
 					if err := s.repo.UpdateStatus(ctx, booking.Id, entity.BookStatusRejected); err != nil {
-						l.Println("cancel", booking.Id, "failed: ", err)
+						l.Error("cancel booking failed", logx.Error(err), slog.Int("book_id", booking.Id))
 						continue
 					}
 				}

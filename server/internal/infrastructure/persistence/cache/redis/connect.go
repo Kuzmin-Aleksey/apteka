@@ -3,7 +3,7 @@ package cache
 import (
 	"context"
 	"github.com/redis/go-redis/v9"
-	"server/config"
+	"server/internal/config"
 	"time"
 )
 

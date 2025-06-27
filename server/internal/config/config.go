@@ -9,8 +9,8 @@ import (
 )
 
 type Config struct {
+	Debug     bool             `json:"debug" yaml:"debug" env:"DEBUG" envDefault:"false"`
 	Http      *HttpConfig      `json:"http" yaml:"http"`
-	Api       *ApiConfig       `json:"api" yaml:"api"`
 	Auth      *AuthConfig      `json:"auth" yaml:"auth"`
 	DB        *DBConfig        `json:"db" yaml:"db"`
 	Sphinx    *SphinxConfig    `json:"sphinx" yaml:"sphinx"`
@@ -21,17 +21,13 @@ type Config struct {
 }
 
 type HttpConfig struct {
-	Address         string `json:"address" yaml:"address"`
-	ReadTimeoutSec  int    `json:"read_timeout_sec" yaml:"read_timeout_sec"`
-	WriteTimeoutSec int    `json:"write_timeout_sec" yaml:"write_timeout_sec"`
-	SSLKeyPath      string `json:"ssl_key_path" yaml:"ssl_key_path"`
-	SSLCertPath     string `json:"ssl_cert_path" yaml:"ssl_cert_path"`
-}
-
-type ApiConfig struct {
-	ApiKey           string `json:"api_key" yaml:"api_key"`
+	Address          string `json:"address" yaml:"address"`
+	ReadTimeoutSec   int    `json:"read_timeout_sec" yaml:"read_timeout_sec"`
 	HandleTimeoutSec int    `json:"handle_timeout_sec" yaml:"handle_timeout_sec"`
-	CacheTemplate    bool   `json:"cache_template" yaml:"cache_template"`
+	WriteTimeoutSec  int    `json:"write_timeout_sec" yaml:"write_timeout_sec"`
+	ApiKey           string `json:"api_key" yaml:"api_key"`
+	SSLKeyPath       string `json:"ssl_key_path" yaml:"ssl_key_path"`
+	SSLCertPath      string `json:"ssl_cert_path" yaml:"ssl_cert_path"`
 }
 
 type AuthConfig struct {
@@ -60,10 +56,11 @@ type RedisConfig struct {
 }
 
 type WebConfig struct {
-	Title       string   `json:"title" yaml:"title"`
-	Logo        string   `json:"logo" yaml:"logo"`
-	LogoMin     string   `json:"logo_min" yaml:"logo_min"`
-	StaticFiles []string `json:"static_files" yaml:"static_files"`
+	CacheTemplate bool     `json:"cache_template" yaml:"cache_template"`
+	Title         string   `json:"title" yaml:"title"`
+	Logo          string   `json:"logo" yaml:"logo"`
+	LogoMin       string   `json:"logo_min" yaml:"logo_min"`
+	StaticFiles   []string `json:"static_files" yaml:"static_files"`
 }
 
 type PromotionConfig struct {
