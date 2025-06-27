@@ -2,8 +2,9 @@ package server
 
 import (
 	"github.com/gorilla/mux"
+	"log"
 	"net/http"
-	"path/filepath"
+	"os"
 	"server/internal/config"
 )
 
@@ -17,7 +18,7 @@ func (s *Server) InitRoutes(rtr *mux.Router, webCfg *config.WebConfig) {
 	rtr.PathPrefix("/image/").Handler(http.StripPrefix("/image", http.FileServer(http.FS(s.imagesFS))))
 
 	s.InitApiHandlers(rtr)
-	s.InitRootStaticFilesRoutes(rtr, webCfg.StaticFiles)
+	s.InitRootStaticFilesRoutes(rtr)
 	s.InitPagesRoutes(rtr, webCfg)
 
 }
@@ -78,9 +79,18 @@ func (s *Server) InitPagesRoutes(rtr *mux.Router, webCfg *config.WebConfig) {
 	rtr.Handle("/admin/images", tm.handleTemplate("web/templates/admin.html", "web/templates/admin_images.html"))
 }
 
-func (s *Server) InitRootStaticFilesRoutes(rtr *mux.Router, files []string) {
-	for _, path := range files {
-		rtr.Handle("/"+filepath.Base(path), s.handleFile(path))
+func (s *Server) InitRootStaticFilesRoutes(rtr *mux.Router) {
+	filesInfo, err := os.ReadDir("./web/root")
+	if err != nil {
+		log.Println("Error opening web root directory:", err)
+	}
+
+	for _, fileInfo := range filesInfo {
+		if fileInfo.IsDir() {
+			continue
+		}
+
+		rtr.Handle("/"+fileInfo.Name(), s.handleFile("./web/root"+fileInfo.Name()))
 	}
 }
 

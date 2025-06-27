@@ -64,7 +64,7 @@ func ResponseLogging(
 				logArgs = append(logArgs, slog.String(logx.FieldResponseBody, string(sensitiveDataMasker.Mask(dump))))
 			}
 
-			logger(ctx).Info(logx.FieldHTTPResponse, logArgs)
+			logger(ctx).Info(logx.FieldHTTPResponse, logArgs...)
 		})
 	}
 }

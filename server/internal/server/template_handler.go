@@ -9,9 +9,11 @@ import (
 )
 
 type TemplateData struct {
-	Title   string `json:"title"`
-	Logo    string `json:"logo" `
-	LogoMin string `json:"logo_min"`
+	Title       string
+	Logo        string
+	LogoMin     string
+	Description string
+	Keywords    string
 }
 
 type templateHandler struct {
@@ -50,9 +52,11 @@ func (th *templateHandler) handleTemplate(tmpPath ...string) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if err := tmp.Execute(w, &TemplateData{
-			Title:   th.cfg.Title,
-			Logo:    th.cfg.Logo,
-			LogoMin: th.cfg.LogoMin,
+			Title:       th.cfg.Title,
+			Logo:        th.cfg.Logo,
+			LogoMin:     th.cfg.LogoMin,
+			Description: th.cfg.Description,
+			Keywords:    th.cfg.Keywords,
 		}); err != nil {
 			writeAndLogErr(ctx, w, failure.NewInternalError("execute template: "+err.Error()))
 			return

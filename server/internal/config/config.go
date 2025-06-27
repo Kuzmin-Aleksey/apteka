@@ -56,11 +56,12 @@ type RedisConfig struct {
 }
 
 type WebConfig struct {
-	CacheTemplate bool     `json:"cache_template" yaml:"cache_template"`
-	Title         string   `json:"title" yaml:"title"`
-	Logo          string   `json:"logo" yaml:"logo"`
-	LogoMin       string   `json:"logo_min" yaml:"logo_min"`
-	StaticFiles   []string `json:"static_files" yaml:"static_files"`
+	CacheTemplate bool   `json:"cache_template" yaml:"cache_template"`
+	Title         string `json:"title" yaml:"title"`
+	Logo          string `json:"logo" yaml:"logo"`
+	LogoMin       string `json:"logo_min" yaml:"logo_min"`
+	Description   string `json:"description" yaml:"description"`
+	Keywords      string `json:"keywords" yaml:"keywords"`
 }
 
 type PromotionConfig struct {
