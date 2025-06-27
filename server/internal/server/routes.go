@@ -90,7 +90,9 @@ func (s *Server) InitRootStaticFilesRoutes(rtr *mux.Router) {
 			continue
 		}
 
-		rtr.Handle("/"+fileInfo.Name(), s.handleFile("./web/root"+fileInfo.Name()))
+		log.Println("handle: ", "/"+fileInfo.Name())
+
+		rtr.Handle("/"+fileInfo.Name(), s.handleFile("web/root/"+fileInfo.Name()))
 	}
 }
 
