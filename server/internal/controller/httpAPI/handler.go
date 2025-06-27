@@ -102,6 +102,8 @@ func (h *Handler) init() error {
 	h.router.HandleFunc("/stores", h.HandleStoresPage).Methods(get)
 	h.router.HandleFunc("/bookings", h.HandleBookingsPage).Methods(get)
 
+	h.router.HandleFunc("/sitemap.xml", h.handleSitemap).Methods(get)
+
 	adminPagesHandler, err := NewAdminPagesHandler(h)
 	if err != nil {
 		return err
