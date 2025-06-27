@@ -152,8 +152,8 @@ func newHttpServer(
 	rtr.Use(
 		middlewarex.TraceId,
 		middlewarex.Logger,
-		middlewarex.RequestLogging(logx.NewSensitiveDataMasker(), 3000),
-		middlewarex.ResponseLogging(logx.NewSensitiveDataMasker(), 3000),
+		middlewarex.RequestLogging(logx.NewSensitiveDataMasker(), 1000),
+		middlewarex.ResponseLogging(logx.NewSensitiveDataMasker(), 1000),
 		middlewarex.NoCache,
 		middlewarex.Recovery,
 	)
@@ -189,5 +189,7 @@ func initLogger(debug bool) *slog.Logger {
 		log.Fatal(err)
 	}
 
-	return slog.New(slog.NewJSONHandler(io.MultiWriter(os.Stdout, f), nil))
+	return slog.New(slog.NewJSONHandler(io.MultiWriter(os.Stdout, f), &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
 }

@@ -129,7 +129,7 @@ func (s *ImagesService) LoadImages(ctx context.Context) error {
 				l.Error("load images failed", logx.Error(ctx.Err()))
 				return
 			case <-s.stopLoadingCh:
-				l.Info("loading stopped")
+				l.Debug("loading stopped")
 				return
 			default:
 			}
@@ -137,7 +137,7 @@ func (s *ImagesService) LoadImages(ctx context.Context) error {
 			if err := s.LoadImage(ctx, prod); err != nil {
 				l.Warn("failed load image", logx.Error(err), slog.Int("code_stu", prod.CodeSTU), slog.Uint64("gtin", prod.GTIN), slog.String("name", prod.Name))
 			} else {
-				l.Info("loaded image", slog.Int("code_stu", prod.CodeSTU), slog.Uint64("gtin", prod.GTIN), slog.String("name", prod.Name))
+				l.Debug("loaded image", slog.Int("code_stu", prod.CodeSTU), slog.Uint64("gtin", prod.GTIN), slog.String("name", prod.Name))
 				count++
 			}
 

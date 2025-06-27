@@ -13,6 +13,12 @@ import (
 	"server/pkg/logx"
 )
 
+var acceptContentTypes = map[string]bool{
+	"application/json": true,
+	"application/xml":  true,
+	"text/xml":         true,
+}
+
 // The trouble with optional interfaces:
 // https://blog.merovius.de/posts/2017-07-30-the-trouble-with-optional-interfaces/
 // https://medium.com/@cep21/interface-wrapping-method-erasure-c523b3549912
@@ -48,13 +54,17 @@ func ResponseLogging(
 			// документации). Поэтому устанавливаем статус 200 вручную.
 			status := cmp.Or(lw.Status(), http.StatusOK)
 
-			logger(ctx).Info(
-				logx.FieldHTTPResponse,
+			logArgs := []any{
 				slog.Int(logx.FieldResponseStatus, status),
-				slog.String(logx.FieldResponseHeaders, string(sensitiveDataMasker.Mask(responseHeaders))),
-				slog.String(logx.FieldResponseBody, string(sensitiveDataMasker.Mask(dump))),
 				slog.Int64(logx.FieldDurationMs, time.Since(start).Milliseconds()),
-			)
+				slog.String(logx.FieldResponseHeaders, string(sensitiveDataMasker.Mask(responseHeaders))),
+			}
+
+			if acceptContentTypes[w.Header().Get("Content-Type")] {
+				logArgs = append(logArgs, slog.String(logx.FieldResponseBody, string(sensitiveDataMasker.Mask(dump))))
+			}
+
+			logger(ctx).Info(logx.FieldHTTPResponse, logArgs)
 		})
 	}
 }

@@ -69,7 +69,7 @@ func NewBookingService(repo BookingRepo, store StoreProvider, products ProductsP
 	} else {
 		bookingDelay, err := time.ParseDuration(string(delayBytes))
 		if err != nil {
-			return nil, fmt.Errorf("booking delay format error: %s\ncheck file %s", err, bookingDelayFilePath)
+			return nil, fmt.Errorf("booking delay format error: %w\ncheck file %s", err, bookingDelayFilePath)
 		}
 		s.bookingDelay = bookingDelay
 	}
