@@ -7,11 +7,13 @@ import (
 	"log/slog"
 	"math"
 	"os"
+	"reflect"
 	"server/internal/domain/aggregate"
 	"server/internal/domain/entity"
 	"server/pkg/contextx"
 	"server/pkg/failure"
 	"server/pkg/logx"
+	"server/pkg/onetomany"
 	"time"
 )
 
@@ -43,6 +45,8 @@ type BookingService struct {
 	products     ProductsProvider
 	promotions   PromotionsProvider
 	bookingDelay time.Duration
+
+	onUpdate onetomany.OneToManyChan[struct{}]
 }
 
 const bookingDelayFilePath = "config/booking-delay.txt"
@@ -55,6 +59,8 @@ func NewBookingService(repo BookingRepo, store StoreProvider, products ProductsP
 		promotions: promotions,
 		store:      store,
 	}
+
+	s.onUpdate.Init(1)
 
 	f, err := os.OpenFile(bookingDelayFilePath, os.O_RDONLY|os.O_CREATE, os.ModePerm)
 	if err != nil {
@@ -157,6 +163,8 @@ func (s *BookingService) ToBook(ctx context.Context, storeId int, dto *CreateBoo
 		return 0, err
 	}
 
+	s.onUpdate.Push(struct{}{})
+
 	return book.Id, nil
 }
 
@@ -164,7 +172,7 @@ func (s *BookingService) UpdateStatus(ctx context.Context, bookId int, status st
 	if err := s.repo.UpdateStatus(ctx, bookId, status); err != nil {
 		return err
 	}
-
+	s.onUpdate.Push(struct{}{})
 	return nil
 }
 
@@ -196,6 +204,64 @@ func (s *BookingService) GetByIds(ctx context.Context, bookIds []int) ([]GetBook
 	return resp, nil
 }
 
+func (s *BookingService) SubscribeToUpdateBookingsIds(ctx context.Context, bookIds []int) <-chan []GetBookingResponseDTO {
+	l := contextx.GetLoggerOrDefault(ctx)
+
+	ch := make(chan []GetBookingResponseDTO)
+
+	go func() {
+		defer close(ch)
+
+		onUpdate, unsubscribe := s.onUpdate.Subscribe()
+		defer unsubscribe()
+
+		var lastBookings []aggregate.BookWithProducts
+
+		for {
+			func() {
+				bookings, err := s.repo.GetByIds(ctx, bookIds)
+				if err != nil {
+					l.Error("SubscribeToUpdateBookingsIds - get bookings", logx.Error(err), slog.Any("bookIds", bookIds))
+					return
+				}
+
+				if reflect.DeepEqual(lastBookings, bookings) {
+					l.Debug("SubscribeToUpdateBookingsIds - bookings is equal", slog.Any("bookIds", bookIds))
+					return
+				}
+
+				lastBookings = bookings
+				l.Debug("SubscribeToUpdateBookingsIds - writing bookings", slog.Any("bookIds", bookIds))
+
+				resp := make([]GetBookingResponseDTO, len(bookings))
+
+				for i := range bookings {
+					resp[i] = GetBookingResponseDTO{
+						BookWithProducts: bookings[i],
+						Delay:            int(math.Round(s.bookingDelay.Hours())),
+					}
+				}
+
+				ch <- resp
+			}()
+
+			checkProducts := time.Tick(time.Second * 30)
+
+			select {
+			case <-ctx.Done():
+				l.Info("SubscribeToUpdateBookingsIds - done", logx.Error(ctx.Err()), slog.Any("bookIds", bookIds))
+				return
+			case <-checkProducts:
+				l.Debug("SubscribeToUpdateBookingsIds - check bookings", slog.Any("bookIds", bookIds))
+			case <-onUpdate:
+				l.Debug("SubscribeToUpdateBookingsIds - update bookings", slog.Any("bookIds", bookIds))
+			}
+		}
+	}()
+
+	return ch
+}
+
 func (s *BookingService) GetByStore(ctx context.Context, storeId int) ([]aggregate.BookWithProducts, error) {
 	bookings, err := s.repo.GetByStore(ctx, storeId)
 	if err != nil {
@@ -204,10 +270,59 @@ func (s *BookingService) GetByStore(ctx context.Context, storeId int) ([]aggrega
 	return bookings, nil
 }
 
+func (s *BookingService) SubscribeToUpdateBookings(ctx context.Context, storeId int) <-chan []aggregate.BookWithProducts {
+	l := contextx.GetLoggerOrDefault(ctx)
+
+	ch := make(chan []aggregate.BookWithProducts)
+
+	go func() {
+		defer close(ch)
+
+		onUpdate, unsubscribe := s.onUpdate.Subscribe()
+		defer unsubscribe()
+
+		var lastBookings []aggregate.BookWithProducts
+
+		for {
+			func() {
+				bookings, err := s.repo.GetByStore(ctx, storeId)
+				if err != nil {
+					l.Error("SubscribeToUpdateBookings - get bookings", logx.Error(err), slog.Int("store_id", storeId))
+					return
+				}
+
+				if reflect.DeepEqual(lastBookings, bookings) {
+					l.Debug("SubscribeToUpdateBookings - bookings is equal", slog.Int("store_id", storeId))
+					return
+				}
+
+				lastBookings = bookings
+				l.Debug("SubscribeToUpdateBookings - writing bookings", slog.Int("store_id", storeId))
+				ch <- bookings
+			}()
+
+			checkProducts := time.Tick(time.Second * 30)
+
+			select {
+			case <-ctx.Done():
+				l.Info("SubscribeToUpdateBookings - done", logx.Error(ctx.Err()), slog.Int("store_id", storeId))
+				return
+			case <-checkProducts:
+				l.Debug("SubscribeToUpdateBookings - check bookings", slog.Int("store_id", storeId))
+			case <-onUpdate:
+				l.Debug("SubscribeToUpdateBookings - update bookings", slog.Int("store_id", storeId))
+			}
+		}
+	}()
+
+	return ch
+}
+
 func (s *BookingService) Delete(ctx context.Context, bookId int) error {
 	if err := s.repo.Delete(ctx, bookId); err != nil {
 		return err
 	}
+	s.onUpdate.Push(struct{}{})
 	return nil
 }
 

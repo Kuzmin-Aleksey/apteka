@@ -529,6 +529,7 @@
         }
     });
 
+    let addToCartFromModalListener;
 
     // Функция для показа детальной информации о товаре
     function showProductDetails(productId) {
@@ -566,9 +567,15 @@
             document.getElementById('addToCartFromModal').disabled = false;
         }
 
-        document.getElementById("addToCartFromModal").addEventListener("click", (btn) => {
-            addToCart(product, 1)
-        })
+        let addToCartFromModal = document.getElementById("addToCartFromModal");
+
+        addToCartFromModal.removeEventListener("click", addToCartFromModalListener);
+
+        addToCartFromModalListener = function () {
+            addToCart(product, 1);
+        }
+
+        addToCartFromModal.addEventListener("click", addToCartFromModalListener);
 
         addAltImage("#productModalImage");
 

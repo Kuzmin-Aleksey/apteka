@@ -25,3 +25,8 @@ type Booking struct {
 	Message   string        `json:"message,omitempty"`
 	Products  []BookProduct `json:"products"`
 }
+
+type BookingsWithError struct {
+	Bookings []Booking
+	Err      error
+}

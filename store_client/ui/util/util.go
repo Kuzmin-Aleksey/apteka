@@ -40,7 +40,6 @@ func ShowError(w fyne.Window, err error) {
 		d.Show()
 		d.SetOnClosed(func() {
 			wg.Done()
-			log.Println("closed")
 		})
 
 		wg.Wait()

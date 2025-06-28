@@ -15,6 +15,14 @@ func RequestLogging(
 ) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			if strings.Contains(r.RequestURI, "image") ||
+				strings.Contains(r.RequestURI, "static") ||
+				strings.Contains(r.RequestURI, "ico") {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			ctx := r.Context()
 			dumpBody := true
 

@@ -2,10 +2,16 @@ package server
 
 import (
 	"encoding/json"
+	"github.com/gorilla/websocket"
+	"golang.org/x/net/context"
+	"log/slog"
 	"math"
 	"net/http"
+	"server/internal/domain/aggregate"
 	"server/internal/domain/service/booking"
+	"server/pkg/contextx"
 	"server/pkg/failure"
+	"server/pkg/logx"
 	"strconv"
 	"time"
 )
@@ -125,6 +131,121 @@ func (s *BookingServer) ApiGetStoreBookings(w http.ResponseWriter, r *http.Reque
 	}
 
 	writeJson(ctx, w, bookings, http.StatusOK)
+}
+
+var bookingWsUpgrader = &websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+func (s *BookingServer) ApiSubscribeStoreOnBookingsUpdate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := contextx.GetLoggerOrDefault(ctx)
+
+	storeId, err := strconv.Atoi(r.FormValue("store_id"))
+	if err != nil {
+		writeAndLogErr(ctx, w, failure.NewInvalidRequestError("invalid store id"+": "+err.Error()))
+		return
+	}
+
+	conn, err := bookingWsUpgrader.Upgrade(w, r, nil)
+	if err != nil {
+		l.Error("upgrade websocket", logx.Error(err))
+		return
+	}
+
+	ctx, cancel := context.WithCancel(contextx.WithLogger(context.Background(), l)) // http context is canceled by default when exiting from handler. net/http/server.go:2008
+
+	bookingChan := s.booking.SubscribeToUpdateBookings(ctx, storeId)
+
+	go func() {
+		t, mess, err := conn.ReadMessage()
+		if err != nil || string(mess) == "close" || t != websocket.CloseNormalClosure {
+			l.Debug("ApiSubscribeStoreOnBookingsUpdate - close connection", logx.Error(err))
+			cancel()
+		}
+	}()
+
+	go func() {
+		for {
+			var bookings []aggregate.BookWithProducts
+
+			select {
+			case bookings = <-bookingChan:
+			case <-ctx.Done():
+				conn.Close()
+				return
+			}
+
+			for attempt := 1; ; attempt++ {
+				if err := conn.WriteJSON(bookings); err != nil {
+					l.Error("write websocket", logx.Error(err), slog.Int("attempt", attempt))
+					if attempt == 5 {
+						conn.Close()
+						return
+					}
+					time.Sleep(time.Second * 2)
+					continue
+				}
+				break
+			}
+		}
+	}()
+}
+
+func (s *BookingServer) ApiSubscribeIdsOnBookingsUpdate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	l := contextx.GetLoggerOrDefault(ctx)
+
+	var ids []int
+	if err := json.Unmarshal([]byte(r.FormValue("ids")), &ids); err != nil {
+		writeAndLogErr(ctx, w, failure.NewInvalidRequestError("invalid book ids"+": "+err.Error()))
+		return
+	}
+
+	conn, err := bookingWsUpgrader.Upgrade(w, r, nil)
+	if err != nil {
+		l.Error("upgrade websocket", logx.Error(err))
+		return
+	}
+
+	ctx, cancel := context.WithCancel(contextx.WithLogger(context.Background(), l)) // http context is canceled by default when exiting from handler. net/http/server.go:2008
+
+	bookingChan := s.booking.SubscribeToUpdateBookingsIds(ctx, ids)
+
+	go func() {
+		t, mess, err := conn.ReadMessage()
+		if err != nil || string(mess) == "close" || t != websocket.CloseNormalClosure {
+			l.Debug("ApiSubscribeStoreOnBookingsUpdate - close connection", logx.Error(err))
+			cancel()
+		}
+	}()
+
+	go func() {
+		for {
+			var bookings []booking.GetBookingResponseDTO
+
+			select {
+			case bookings = <-bookingChan:
+			case <-ctx.Done():
+				conn.Close()
+				return
+			}
+
+			for attempt := 1; ; attempt++ {
+				if err := conn.WriteJSON(bookings); err != nil {
+					l.Error("write websocket", logx.Error(err), slog.Int("attempt", attempt))
+					if attempt == 5 {
+						conn.Close()
+						return
+					}
+					time.Sleep(time.Second * 2)
+					continue
+				}
+				break
+			}
+		}
+	}()
 }
 
 func (s *BookingServer) ApiDeleteBooking(w http.ResponseWriter, r *http.Request) {

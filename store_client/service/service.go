@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"slices"
 	"store_client/config"
 	"store_client/models"
@@ -20,17 +22,20 @@ import (
 const (
 	pingUrl                = "/ping"
 	getBookingsUrl         = "/api/booking/by-store"
+	getBookingsWsUrl       = "/api/booking/by-store/ws"
 	updateBookingStatusUrl = "/api/booking/update-status"
 	deleteBookingUrl       = "/api/booking/delete"
 )
 
 type Service struct {
-	cfg *config.ServiceConfig
+	cfg    *config.ServiceConfig
+	wsAddr string
 }
 
 func NewService(cfg *config.ServiceConfig) *Service {
 	return &Service{
-		cfg: cfg,
+		cfg:    cfg,
+		wsAddr: regexp.MustCompile(`\Ahttps?`).ReplaceAllString(cfg.ServerAddr, "ws"),
 	}
 }
 
@@ -71,6 +76,92 @@ func (s *Service) GetBookings() ([]models.Booking, error) {
 	log.Println("loaded booking")
 
 	return bookings, nil
+}
+
+func (s *Service) GetBookingsChan() <-chan models.BookingsWithError {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	d := websocket.Dialer{}
+	ch := make(chan models.BookingsWithError)
+
+	go func() {
+		defer close(ch)
+
+		for {
+			values := urlValues{
+				"store_id": strconv.Itoa(s.cfg.StoreId),
+			}
+
+			conn, resp, err := d.Dial(s.wsAddr+getBookingsWsUrl+values.String(), http.Header{
+				"Authorization": []string{"ApiKey " + s.cfg.ApiKey},
+			})
+
+			if err != nil {
+				if errors.As(err, new(net.Error)) {
+					ch <- models.BookingsWithError{
+						Err: failure.NewNetworkError(err.Error()),
+					}
+					continue
+				}
+				ch <- models.BookingsWithError{
+					Err: failure.NewNetworkError(err.Error()),
+				}
+				continue
+			}
+
+			if resp.StatusCode != http.StatusSwitchingProtocols {
+				if resp.StatusCode == http.StatusUnauthorized {
+					ch <- models.BookingsWithError{
+						Err: failure.NewUnauthorizedError(readError(resp.Body), resp.StatusCode),
+					}
+					continue
+				}
+				ch <- models.BookingsWithError{
+					Err: failure.NewServerError(readError(resp.Body), resp.StatusCode),
+				}
+				continue
+			}
+
+			log.Println("connected to ws")
+
+			func() {
+				defer func() {
+					log.Println("close conn...")
+					if err := conn.Close(); err != nil {
+						log.Println("close conn:", err)
+					}
+					log.Println("close conn - ok")
+				}()
+
+				errorsCount := 0
+
+				for {
+					var bookings []models.Booking
+
+					if err := conn.ReadJSON(&bookings); err != nil {
+						log.Println("read bookings error:", err)
+						errorsCount++
+						if errorsCount < 10 {
+							continue
+						}
+
+						ch <- models.BookingsWithError{
+							Err: failure.NewNetworkError(err.Error()),
+						}
+						log.Println("reconnect...")
+						return
+					}
+
+					SortBookings(bookings)
+					ch <- models.BookingsWithError{
+						Bookings: bookings,
+					}
+				}
+			}()
+		}
+	}()
+
+	return ch
 }
 
 func (s *Service) SetBookingStatus(id int, status string) error {

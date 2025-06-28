@@ -77,10 +77,7 @@ func (w *Window) Run() {
 	split.SetOffset(0.3)
 	w.SetContent(split)
 
-	for {
-		w.loadBookings()
-		time.Sleep(time.Second * 5)
-	}
+	w.loadingBookings()
 }
 
 func (w *Window) createItem() fyne.CanvasObject {
@@ -124,30 +121,38 @@ func (w *Window) updateItem(i widget.ListItemID, item fyne.CanvasObject) {
 	}
 }
 
-func (w *Window) loadBookings() {
-	bookings, err := w.s.GetBookings()
-	if err != nil {
-		util.ShowError(w, err)
-		return
-	}
+func (w *Window) loadingBookings() {
+	bookingsCh := w.s.GetBookingsChan()
 
-	for _, booking := range bookings {
-		if booking.Status == models.BookStatusCreated {
-			if !slices.ContainsFunc(w.bookings, func(b models.Booking) bool { return b.Id == booking.Id }) {
-				w.OnNewBooking(&booking)
+	go func() {
+		for {
+			bookingResp := <-bookingsCh
+			bookings, err := bookingResp.Bookings, bookingResp.Err
+			if err != nil {
+				log.Println(" <-bookingsCh err:", err)
+				util.ShowError(w, err)
+				continue
 			}
+
+			for _, booking := range bookings {
+				if booking.Status == models.BookStatusCreated {
+					if !slices.ContainsFunc(w.bookings, func(b models.Booking) bool { return b.Id == booking.Id }) {
+						w.OnNewBooking(&booking)
+					}
+				}
+			}
+
+			w.bookings = bookings
+
+			for i := range w.bookings {
+				if w.bookings[i].Id == w.selectedId {
+					w.bookingsList.Select(i)
+				}
+			}
+
+			w.bookingsList.Refresh()
 		}
-	}
-
-	w.bookings = bookings
-
-	for i := range w.bookings {
-		if w.bookings[i].Id == w.selectedId {
-			w.bookingsList.Select(i)
-		}
-	}
-
-	w.bookingsList.Refresh()
+	}()
 }
 
 func (w *Window) deleteBooking(id int) {

@@ -93,8 +93,16 @@ func Run(cfg *config.Config) {
 	httpServer := newHttpServer(l, productsService, promotionService, imagesService, storeService, authService, bookingService, imagesFS, cfg.Http, cfg.Web)
 
 	go func() {
+		if cfg.Http.SSLCertPath != "" && cfg.Http.SSLKeyPath != "" {
+			log.Println("Starting HTTPS server on", cfg.Http.Address)
+			if err := httpServer.ListenAndServeTLS(cfg.Http.SSLCertPath, cfg.Http.SSLKeyPath); err != nil {
+				log.Fatal("Listen http: ", err)
+			}
+			return
+		}
+
 		if err := httpServer.ListenAndServe(); err != nil {
-			log.Fatal(err)
+			log.Fatal("Listen http: ", err)
 		}
 	}()
 

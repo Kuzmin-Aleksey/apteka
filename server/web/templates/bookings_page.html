@@ -348,6 +348,58 @@
         xhr.send();
     }
 
+
+    function loadingBookingsWs() {
+        console.log("connecting to ws...")
+
+        let ws = new WebSocket(`ws://${location.host}/api/booking/get-by-ids/ws?ids=${JSON.stringify(bookingIds)}`);
+
+        ws.onmessage = (event) => {
+            let newBookings = event.data ? JSON.parse(event.data) : []
+
+            let reconnect = false
+
+            bookingIds = bookingIds.filter(id => {
+                if (!newBookings.find(b => b.id === id)) {
+                    deleteBooking(id);
+                    reconnect = true;
+                }
+            })
+
+
+            newBookings = newBookings.sort((a, b) => {
+                let v1 = statusNum[a.status] - statusNum[b.status]
+                if (v1 !== 0) {
+                    return v1
+                }
+                return Date.parse(b.created_at) - Date.parse(a.created_at)
+            })
+
+            if (deepEqual(newBookings, bookings)) {
+                return
+            }
+
+            bookings = newBookings;
+            renderBookings();
+
+            if (reconnect) {
+                ws.close();
+                loadingBookingsWs();
+            }
+        };
+
+        ws.onclose = (event) => {
+            console.error("ws closed", event)
+            loadingBookingsWs();
+        };
+
+        ws.onerror = (err) => {
+            console.error("close ws", err)
+            loadingBookingsWs();
+        };
+    }
+
+
     function addAltImage() {
         document.querySelectorAll(".item-image").forEach(el => {
             function listener() {
@@ -531,8 +583,7 @@
 
         loadBookings(true);
 
-
-        setInterval(loadBookings, 5_000);
+        loadingBookingsWs();
     });
 </script>
 </body>
