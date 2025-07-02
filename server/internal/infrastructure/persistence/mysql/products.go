@@ -153,6 +153,13 @@ func (r *ProductRepo) FindByStore(ctx context.Context, storeId int) ([]entity.Pr
 	return products, nil
 }
 
+func (r *ProductRepo) DeleteByStoreId(ctx context.Context, storeId int) error {
+	if _, err := r.DB.ExecContext(ctx, "DELETE FROM products WHERE StoreID=?", storeId); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *ProductRepo) DeleteByCodes(ctx context.Context, storeId int, ids []int) error {
 	query := "DELETE FROM products WHERE Code IN (" + joinNums(ids, ", ") + ") AND StoreID=?"
 
