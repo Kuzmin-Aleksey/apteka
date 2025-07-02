@@ -47,10 +47,12 @@ func (g *SitemapGenerator) handleSitemap(w http.ResponseWriter, r *http.Request)
 	sm.Xmlns = "http://www.sitemaps.org/schemas/sitemap/0.9"
 
 	urlFiles := map[string]string{
+		"/":       "web/templates/main_page.html",
 		"/stores": "web/templates/stores_page.html",
 	}
 
 	priorityMap := map[string]float32{
+		"/":       0.5,
 		"/stores": 0.9,
 	}
 
