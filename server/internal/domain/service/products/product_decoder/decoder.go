@@ -7,15 +7,15 @@ import (
 	"server/internal/domain/entity"
 )
 
-func Decode(r io.Reader) ([]entity.Product, error) {
+func Decode(r io.Reader) ([]entity.Product, int, error) {
 	storeId, err := readUint32AsInt(r)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	count, err := readUint32AsInt(r)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	products := make([]entity.Product, count)
@@ -26,42 +26,42 @@ func Decode(r io.Reader) ([]entity.Product, error) {
 
 		product.CodeSTU, err = readUint32AsInt(r)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		product.StoreId = storeId
 		product.Name, err = readString(r)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		product.GTIN, err = readUint64(r)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		product.Description, err = readString(r)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		product.Count, err = readUint32AsInt(r)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		product.Price, err = readUint32AsInt(r)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		product.Country, err = readString(r)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		product.Producer, err = readString(r)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		products[i] = product
 	}
 
-	return products, nil
+	return products, storeId, nil
 }
 
 func readAndCheck(r io.Reader, p []byte) error {
@@ -116,58 +116,3 @@ func readUint16(r io.Reader) (uint16, error) {
 	}
 	return binary.BigEndian.Uint16(p), nil
 }
-
-/*
-WITH ost AS (
-SELECT
-ROW_NUMBER() OVER (PARTITION BY G.CODE ORDER BY convert(DECIMAL(20,2),L.PRICE_SAL)) AS dp,
-CAST(G.CODE AS BIGINT ) AS CODE,
-CAST(G.[NAME] AS VARCHAR(250)) AS NAME,
-L.QUANTITY_REM AS KOL,
-convert(DECIMAL(20,2),L.PRICE_SAL) AS SALE_PRICE,
-
-CAST(
-(
-	SELECT TOP 1
-	KIZ.GTIN
-
-	FROM KIZ_2_DOCUMENT_ITEM KDI
-	JOIN KIZ ON KIZ.ID_KIZ_GLOBAL=KDI.ID_KIZ_GLOBAL
-	WHERE 1=1
-	AND KDI.ID_DOCUMENT_ITEM_ADD = L.ID_DOCUMENT_ITEM_ADD
-) AS bigint) AS GTIN,
-
-
-CAST(P.[NAME] AS VARCHAR(80)) AS PRODUCER,
-CAST(CR.[NAME] AS VARCHAR(80)) AS COUNTRY,
-
-G.DESCRIPTION
-
-FROM LOT L
-inner join GOODS G on L.ID_GOODS = G.ID_GOODS
-inner join PRODUCER P on P.ID_PRODUCER = G.ID_PRODUCER
-inner join STORE ST on ST.ID_STORE = L.ID_STORE
-inner join COUNTRY CR on CR.ID_COUNTRY = P.ID_COUNTRY
-
-
-WHERE 1=1
-AND L.QUANTITY_REM > 0
-and ST.ID_CONTRACTOR = DBO.FN_CONST_CONTRACTOR_SELF()
-and l.id_store = 270
---and st.MNEMOCODE in ('О-4601')
-)
-
-
-SELECT
-(
-SELECT TOP 1
-	L.NAME
-	FROM ost L
-WHERE L.CODE = ost.CODE
-)
-
-
-FROM ost
-WHERE ost.dp = 1
-
-*/

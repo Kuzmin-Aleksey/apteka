@@ -3,20 +3,25 @@ package products
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"server/internal/domain/aggregate"
 	"server/internal/domain/entity"
+	"server/pkg/contextx"
 	"server/pkg/failure"
+	"server/pkg/logx"
 	"server/pkg/tx_manager"
 	"slices"
 	"time"
 )
 
 type ProductRepo interface {
+	Save(ctx context.Context, product *entity.Product) error
 	GetAll(ctx context.Context) ([]entity.Product, error)
 	FindByCode(ctx context.Context, storeId int, id int) (*entity.Product, error)
 	FindByCodes(ctx context.Context, storeId int, ids []int) ([]entity.Product, error)
-	DeleteByStoreId(ctx context.Context, storeID int) error
-	Save(ctx context.Context, product *entity.Product) error
+	FindByStore(ctx context.Context, storeId int) ([]entity.Product, error)
+	Update(ctx context.Context, product *entity.Product) error
+	DeleteByCodes(ctx context.Context, storeId int, ids []int) error
 }
 
 type Searcher interface {
@@ -174,20 +179,17 @@ func (s *ProductService) CheckInStock(ctx context.Context, storeId int, checking
 	return result, nil
 }
 
-func (s *ProductService) UploadProducts(ctx context.Context, products []entity.Product) error {
-	if len(products) == 0 {
-		return failure.NewInvalidRequestError("products is empty")
-	}
-	ctx, err := tx_manager.WithTx(ctx, s.productRepo)
+func (s *ProductService) UploadProducts(ctx context.Context, storeId int, products []entity.Product) error {
+	currentProducts, err := s.productRepo.FindByStore(ctx, storeId)
 	if err != nil {
-		return failure.NewInternalError(err.Error())
+		return err
 	}
 
-	if err := s.productRepo.DeleteByStoreId(ctx, products[0].StoreId); err != nil {
-		if rbErr := tx_manager.Rollback(ctx); rbErr != nil {
-			return fmt.Errorf("%w, rollback err: %s", err, rbErr)
-		}
-		return err
+	currentProductsMap := productsToMap(currentProducts)
+
+	ctx, err = tx_manager.WithTx(ctx, s.productRepo)
+	if err != nil {
+		return failure.NewInternalError(err.Error())
 	}
 
 	for _, product := range products {
@@ -195,16 +197,42 @@ func (s *ProductService) UploadProducts(ctx context.Context, products []entity.P
 			continue
 		}
 
-		if err = s.productRepo.Save(ctx, &product); err != nil {
-			if rbErr := tx_manager.Rollback(ctx); rbErr != nil {
-				return fmt.Errorf("%w, rollback err: %s", err, rbErr)
+		currentProduct, ok := currentProductsMap[product.CodeSTU]
+		if !ok {
+			if err = s.productRepo.Save(ctx, &product); err != nil {
+				if rbErr := tx_manager.Rollback(ctx); rbErr != nil {
+					return fmt.Errorf("%w, rollback err: %s", err, rbErr)
+				}
+				return err
 			}
-			return err
+			continue
 		}
+
+		if !equalProducts(currentProduct, &product) {
+			if err = s.productRepo.Update(ctx, &product); err != nil {
+				if rbErr := tx_manager.Rollback(ctx); rbErr != nil {
+					return fmt.Errorf("%w, rollback err: %s", err, rbErr)
+				}
+				return err
+			}
+		}
+
+		delete(currentProductsMap, currentProduct.CodeSTU)
 	}
 
-	if err := s.storeRepo.SetLastUploadTime(ctx, products[0].StoreId, time.Now()); err != nil {
+	productsToDelete := make([]int, 0, len(currentProductsMap))
+	for code := range currentProductsMap {
+		productsToDelete = append(productsToDelete, code)
+	}
+	if err = s.productRepo.DeleteByCodes(ctx, storeId, productsToDelete); err != nil {
+		if rbErr := tx_manager.Rollback(ctx); rbErr != nil {
+			return fmt.Errorf("%w, rollback err: %s", err, rbErr)
+		}
 		return err
+	}
+
+	if err := s.storeRepo.SetLastUploadTime(ctx, storeId, time.Now()); err != nil {
+		contextx.GetLoggerOrDefault(ctx).Error("UploadProducts - SetLastUploadTime", logx.Error(err), slog.Int("store_id", storeId))
 	}
 
 	if err := tx_manager.Commit(ctx); err != nil {

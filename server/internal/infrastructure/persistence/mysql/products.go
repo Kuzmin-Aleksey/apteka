@@ -83,6 +83,14 @@ func (r *ProductRepo) Save(ctx context.Context, product *entity.Product) error {
 	return nil
 }
 
+func (r *ProductRepo) Update(ctx context.Context, product *entity.Product) error {
+	if _, err := r.DB.ExecContext(ctx, "UPDATE products SET GTIN=?, Name=?, Count=?, Price=?, Producer=?, Country=?, Description=? WHERE Code=? AND StoreID=?",
+		product.GTIN, product.Name, product.Count, product.Price, product.Producer, product.Country, product.Description, product.CodeSTU, product.StoreId); err != nil {
+		return failure.NewInternalError(err.Error())
+	}
+	return nil
+}
+
 func (r *ProductRepo) FindByCode(ctx context.Context, storeId int, code int) (*entity.Product, error) {
 	var product entity.Product
 	row := r.DB.QueryRowContext(ctx, "SELECT * FROM products WHERE Code=? AND StoreID=? ", code, storeId)
@@ -123,10 +131,35 @@ func (r *ProductRepo) FindByCodes(ctx context.Context, storeId int, ids []int) (
 	return products, nil
 }
 
-func (r *ProductRepo) DeleteByStoreId(ctx context.Context, storeId int) error {
-	if _, err := r.DB.ExecContext(ctx, "DELETE FROM products WHERE StoreID=?", storeId); err != nil {
-		return err
+func (r *ProductRepo) FindByStore(ctx context.Context, storeId int) ([]entity.Product, error) {
+	products := make([]entity.Product, 0)
+
+	rows, err := r.DB.QueryContext(ctx, "SELECT * FROM products WHERE StoreID=?", storeId)
+	if err != nil {
+		if errorsutils.Is(err, sql.ErrNoRows) {
+			return products, nil
+		}
+		return nil, failure.NewInternalError(err.Error())
 	}
+	defer rows.Close()
+
+	for rows.Next() {
+		p, err := r.scanProduct(rows)
+		if err != nil {
+			return nil, failure.NewInternalError(err.Error())
+		}
+		products = append(products, p)
+	}
+	return products, nil
+}
+
+func (r *ProductRepo) DeleteByCodes(ctx context.Context, storeId int, ids []int) error {
+	query := "DELETE FROM products WHERE Code IN (" + joinNums(ids, ", ") + ") AND StoreID=?"
+
+	if _, err := r.DB.ExecContext(ctx, query, storeId); err != nil {
+		return failure.NewInternalError(err.Error())
+	}
+
 	return nil
 }
 

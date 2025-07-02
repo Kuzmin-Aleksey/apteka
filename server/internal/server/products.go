@@ -48,13 +48,13 @@ func (s *ProductsServer) ApiHandleUploadProducts(w http.ResponseWriter, r *http.
 		return
 	}
 
-	prods, err := product_decoder.Decode(bytes.NewReader(body))
+	prods, storeId, err := product_decoder.Decode(bytes.NewReader(body))
 	if err != nil {
 		writeAndLogErr(ctx, w, err)
 		return
 	}
 
-	if err := s.products.UploadProducts(r.Context(), prods); err != nil {
+	if err := s.products.UploadProducts(r.Context(), storeId, prods); err != nil {
 		writeAndLogErr(ctx, w, err)
 		return
 	}
