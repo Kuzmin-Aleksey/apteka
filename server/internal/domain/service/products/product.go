@@ -220,15 +220,17 @@ func (s *ProductService) UploadProducts(ctx context.Context, storeId int, produc
 		delete(currentProductsMap, currentProduct.CodeSTU)
 	}
 
-	productsToDelete := make([]int, 0, len(currentProductsMap))
-	for code := range currentProductsMap {
-		productsToDelete = append(productsToDelete, code)
-	}
-	if err = s.productRepo.DeleteByCodes(ctx, storeId, productsToDelete); err != nil {
-		if rbErr := tx_manager.Rollback(ctx); rbErr != nil {
-			return fmt.Errorf("%w, rollback err: %s", err, rbErr)
+	if len(currentProductsMap) > 0 {
+		productsToDelete := make([]int, 0, len(currentProductsMap))
+		for code := range currentProductsMap {
+			productsToDelete = append(productsToDelete, code)
 		}
-		return err
+		if err = s.productRepo.DeleteByCodes(ctx, storeId, productsToDelete); err != nil {
+			if rbErr := tx_manager.Rollback(ctx); rbErr != nil {
+				return fmt.Errorf("%w, rollback err: %s", err, rbErr)
+			}
+			return err
+		}
 	}
 
 	if err := s.storeRepo.SetLastUploadTime(ctx, storeId, time.Now()); err != nil {
