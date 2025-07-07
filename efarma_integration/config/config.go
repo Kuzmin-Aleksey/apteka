@@ -20,13 +20,12 @@ type HttpClientConfig struct {
 }
 
 type DbConfig struct {
-	Host           string `json:"host"`
-	Username       string `json:"username"`
-	Password       string `json:"password"`
-	DBName         string `json:"db_name"`
-	ConnectTimeout int    `json:"connect_timeout"`
-	Encrypt        string `json:"encrypt"`
-	SQLExpress     bool   `json:"sql_express"`
+	Host       string         `json:"host"`
+	Username   string         `json:"username"`
+	Password   string         `json:"password"`
+	DBName     string         `json:"db_name"`
+	Args       map[string]any `json:"args"`
+	SQLExpress bool           `json:"sql_express"`
 }
 
 func GetConfig(configPath string) (*Config, error) {

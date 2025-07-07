@@ -13,7 +13,7 @@ import (
 )
 
 const ConfigPath = "config/config.json"
-const LogPath = "logs/last_unload.txt"
+const LogPath = "logs/last_unload.log"
 
 func main() {
 	initLogger()
