@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/gorilla/websocket"
+	"golang.org/x/net/context"
 	"net/http"
 	"server/internal/domain/service/images"
 	"server/internal/infrastructure/integration/image_parser"
@@ -28,6 +29,7 @@ var wsUpgrader = &websocket.Upgrader{
 
 func (h *ImagesServer) ApiLoadImages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	ctx = contextx.WithLogger(context.Background(), contextx.GetLoggerOrDefault(ctx))
 
 	if err := h.images.LoadImages(ctx); err != nil {
 		writeAndLogErr(ctx, w, err)
