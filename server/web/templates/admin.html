@@ -41,17 +41,26 @@
 </header>
 
 <script>
+    let replaceMu = false;
+
     function CheckCode(xhr) {
         if (xhr.status !== StatusOk) {
             let err = xhr.response !== null?  xhr.response["error"] : ""
             console.error(err)
 
-            if (xhr.status === StatusUnauthorized) {
-                alert("Требуется авторизация")
-                location.replace("/admin/login")
+            if (!replaceMu) {
+                replaceMu = true;
+
+                if (xhr.status === StatusUnauthorized) {
+                    alert("Требуется авторизация")
+                    location.replace("/admin/login")
+                }
+
+                alert(`Ошибка ${xhr.status}`)
+
+                replaceMu = false;
             }
 
-            alert(`Ошибка ${xhr.status}`)
             return false
         }
 
@@ -60,8 +69,12 @@
 
     function OnUnauthorized(msg) {
         console.error(msg);
-        alert("Требуется авторизация");
-        location.replace("/admin/login")
+        if (!replaceMu) {
+            replaceMu = true;
+            alert("Требуется авторизация");
+            location.replace("/admin/login")
+            replaceMu = false;
+        }
     }
 
     function checkToken() {
