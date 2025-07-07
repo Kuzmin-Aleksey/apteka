@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"github.com/gorilla/mux"
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/lmittmann/tint"
 	"io"
 	"log"
@@ -192,12 +193,15 @@ func initLogger(debug bool) *slog.Logger {
 		}))
 	}
 
-	f, err := os.OpenFile("logs.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModePerm)
+	rt, err := rotatelogs.New("logs/%Y-%m-%d.log",
+		rotatelogs.WithRotationTime(time.Hour*24),
+		rotatelogs.WithMaxAge(time.Hour*24*15),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return slog.New(slog.NewJSONHandler(io.MultiWriter(os.Stdout, f), &slog.HandlerOptions{
+	return slog.New(slog.NewJSONHandler(io.MultiWriter(os.Stdout, rt), &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
 }
