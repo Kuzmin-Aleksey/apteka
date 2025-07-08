@@ -60,7 +60,7 @@ func (s *PromotionService) RunAutoDeletion(ctx context.Context) {
 }
 
 func (s *PromotionService) UploadPromotionDocument(ctx context.Context, doc io.Reader) ([]entity.Promotion, error) {
-	promotions, err := promotion_parser.ParseDoc(doc)
+	promotions, err := promotion_parser.ParseDoc(ctx, doc)
 	if err != nil {
 		return nil, err
 	}
@@ -76,13 +76,20 @@ func (s *PromotionService) UploadPromotionDocument(ctx context.Context, doc io.R
 		return nil, err
 	}
 
+	existPromotions := make(map[int]struct{})
+
 	for _, promotion := range promotions {
+		if _, ok := existPromotions[promotion.ProductCode]; ok {
+			contextx.GetLoggerOrDefault(ctx).Warn("UploadPromotionDocument - duplicate promotion", "promotion", promotion)
+			continue
+		}
 		if err := s.repo.Save(ctx, &promotion); err != nil {
 			if rbErr := tx_manager.Rollback(ctx); rbErr != nil {
 				return nil, fmt.Errorf("%w, rollback err: %s", err, rbErr)
 			}
 			return nil, err
 		}
+		existPromotions[promotion.ProductCode] = struct{}{}
 	}
 
 	if err := tx_manager.Commit(ctx); err != nil {

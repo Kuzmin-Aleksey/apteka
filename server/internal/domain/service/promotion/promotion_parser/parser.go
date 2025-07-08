@@ -2,14 +2,16 @@ package promotion_parser
 
 import (
 	"github.com/xuri/excelize/v2"
+	"golang.org/x/net/context"
 	"io"
 	"server/internal/domain/entity"
+	"server/pkg/contextx"
 	"server/pkg/failure"
 	"strings"
 	"unicode"
 )
 
-func ParseDoc(doc io.Reader) ([]entity.Promotion, error) {
+func ParseDoc(ctx context.Context, doc io.Reader) ([]entity.Promotion, error) {
 	f, err := excelize.OpenReader(doc)
 	if err != nil {
 		return nil, failure.NewInvalidFileError(err.Error())
@@ -40,14 +42,22 @@ func ParseDoc(doc io.Reader) ([]entity.Promotion, error) {
 			continue
 		}
 
+		productCodes := parseProductCodes(row[0])
+		prodName := strings.TrimSpace(row[1])
 		discount, isPercent := parseDiscount(strings.TrimSpace(row[2]))
 
-		promotions = append(promotions, entity.Promotion{
-			ProductCode: parseInt(row[0]),
-			ProductName: strings.TrimSpace(row[1]),
-			Discount:    discount,
-			IsPercent:   isPercent,
-		})
+		for _, productCode := range productCodes {
+			promotions = append(promotions, entity.Promotion{
+				ProductCode: productCode,
+				ProductName: prodName,
+				Discount:    discount,
+				IsPercent:   isPercent,
+			})
+		}
+
+		if len(productCodes) == 0 {
+			contextx.GetLoggerOrDefault(ctx).Warn("ParseDoc - product codes not found", "row", row)
+		}
 	}
 
 	return promotions, nil
@@ -59,6 +69,26 @@ func parseDiscount(s string) (int, bool) {
 	}
 
 	return parseInt(s), false
+}
+
+func parseProductCodes(s string) []int {
+	var codes []int
+
+	currentCode := 0
+
+	for _, c := range s {
+		if unicode.IsDigit(c) {
+			currentCode = currentCode*10 + int(c-'0')
+		} else if currentCode != 0 {
+			codes = append(codes, currentCode)
+			currentCode = 0
+		}
+	}
+	if currentCode != 0 {
+		codes = append(codes, currentCode)
+	}
+
+	return codes
 }
 
 func parseInt(s string) int {
