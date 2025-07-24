@@ -24,6 +24,8 @@ func main() {
 
 func showNotify(title string, content string) {
 	a := app.New()
+	a.Settings().SetTheme(greenTheme{})
+
 	w := a.NewWindow("Уведомление")
 	w.Resize(fyne.NewSize(250, 110))
 
