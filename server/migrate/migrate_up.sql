@@ -20,7 +20,7 @@ create fulltext index ft_name_description
 
 create table promotions
 (
-    product_code int               not null
+    product_code bigint               not null
         primary key,
     product_name varchar(250)      not null,
     discount     int               not null,
@@ -64,7 +64,7 @@ create table booking_products
     id         int auto_increment
         primary key,
     booking_id int           not null,
-    code_stu   int           not null,
+    code_stu   bigint           not null,
     name       varchar(250)  not null,
     quantity   int default 1 not null,
     price      int           not null,
